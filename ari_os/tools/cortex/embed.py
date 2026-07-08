@@ -269,3 +269,76 @@ def pack_embedding(v: list[float]) -> bytes:
 
 def unpack_embedding(raw: bytes) -> list[float]:
     return list(struct.unpack(f"{EMBED_DIM}f", raw))
+
+
+# ---------------------------------------------------------------------------
+# backend selection (local patch: wire `cortex.embeddings` config into the
+# default client; upstream hardcodes the Ollama EmbedClient at call sites)
+# ---------------------------------------------------------------------------
+
+class NullEmbedClient:
+    """No-op embedder: retrieval degrades to the lexical (FTS5) path."""
+
+    def embed(self, texts: list[str]) -> list[None]:
+        return [None] * len(texts)
+
+
+class ApiEmbedClient:
+    """Google embedContent client with the EmbedClient interface."""
+
+    def __init__(self, model: str = API_DEFAULT_MODEL, dim: int = EMBED_DIM) -> None:
+        self.model = model
+        self.dim = dim
+
+    def embed(self, texts: list[str]) -> list[list[float]]:
+        return [
+            _api_embed_one(t, model=self.model, dim=self.dim)
+            for t in texts
+        ]
+
+
+def _google_key_available() -> bool:
+    """Gentle key probe: env then keychain. Never exits, never prints."""
+    import os as _os
+    import subprocess as _sp
+    if _os.environ.get("GEMINI_API_KEY"):
+        return True
+    try:
+        r = _sp.run(
+            ["security", "find-generic-password",
+             "-s", "com.ari-os.keys", "-a", "GEMINI_API_KEY", "-w"],
+            capture_output=True, text=True, timeout=5)
+        return r.returncode == 0 and bool(r.stdout.strip())
+    except Exception:
+        return False
+
+
+def _ollama_reachable(url: str = OLLAMA_URL) -> bool:
+    try:
+        httpx.get(f"{url.rstrip('/')}/api/tags", timeout=0.3)
+        return True
+    except Exception:
+        return False
+
+
+def default_embed_client():
+    """Resolve the embed client from ``cortex.embeddings`` config.
+
+    google -> ApiEmbedClient (Null if no key yet: lexical-only, no noise)
+    ollama -> EmbedClient · off -> NullEmbedClient
+    auto/unset -> ollama if reachable, else google if key, else Null
+    """
+    from .config import _config_value
+    pref = (_config_value("cortex.embeddings") or "auto").strip().lower()
+    if pref == "off":
+        return NullEmbedClient()
+    if pref == "ollama":
+        return EmbedClient()
+    if pref in ("google", "api"):
+        return ApiEmbedClient() if _google_key_available() else NullEmbedClient()
+    # auto
+    if _ollama_reachable():
+        return EmbedClient()
+    if _google_key_available():
+        return ApiEmbedClient()
+    return NullEmbedClient()

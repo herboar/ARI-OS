@@ -41,7 +41,7 @@ def main() -> None:
 @click.option("--dry-run", is_flag=True, help="Print what would be indexed without writing.")
 def ingest(rebuild: bool, path_filter: str | None, dry_run: bool) -> None:
     """Index transcripts (default sweep) or a single file."""
-    from .embed import EmbedClient
+    from .embed import default_embed_client
     from .index import index_file, index_sweep, set_markdown_indexing
 
     db = brain_db_path()
@@ -58,7 +58,7 @@ def ingest(rebuild: bool, path_filter: str | None, dry_run: bool) -> None:
         db.unlink()
     init_db(db)
 
-    emb = EmbedClient()
+    emb = default_embed_client()
     if path_filter:
         p = Path(path_filter)
         layer = "semantic"

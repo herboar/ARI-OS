@@ -288,12 +288,13 @@ def index_file(
                      chunk.line_end, region, imp),
                 )
                 cid = cur.lastrowid
-                packed = _pack(vec)
-                con.execute(
-                    "INSERT INTO chunk_vec(rowid, embedding) VALUES (?, ?)",
-                    (cid, packed),
-                )
-                vec_sidecar.dual_write(con, cid, packed, region)
+                if vec is not None:
+                    packed = _pack(vec)
+                    con.execute(
+                        "INSERT INTO chunk_vec(rowid, embedding) VALUES (?, ?)",
+                        (cid, packed),
+                    )
+                    vec_sidecar.dual_write(con, cid, packed, region)
                 chunk_ids.append(cid)
         con.execute("COMMIT")
         return chunk_ids
@@ -351,12 +352,13 @@ def _index_jsonl(
                 (source_id, i, text, i, i, region, imp, sess, cts),
             )
             cid = cur.lastrowid
-            packed = _pack(vec)
-            con.execute(
-                "INSERT INTO chunk_vec(rowid, embedding) VALUES (?, ?)",
-                (cid, packed),
-            )
-            vec_sidecar.dual_write(con, cid, packed, region)
+            if vec is not None:
+                packed = _pack(vec)
+                con.execute(
+                    "INSERT INTO chunk_vec(rowid, embedding) VALUES (?, ?)",
+                    (cid, packed),
+                )
+                vec_sidecar.dual_write(con, cid, packed, region)
             chunk_ids.append(cid)
         con.execute("COMMIT")
         return chunk_ids
@@ -407,12 +409,13 @@ def index_text(
             (source_id, text, region, imp),
         )
         cid = cur.lastrowid
-        packed = _pack(vec)
-        con.execute(
-            "INSERT INTO chunk_vec(rowid, embedding) VALUES (?, ?)",
-            (cid, packed),
-        )
-        vec_sidecar.dual_write(con, cid, packed, region)
+        if vec is not None:
+            packed = _pack(vec)
+            con.execute(
+                "INSERT INTO chunk_vec(rowid, embedding) VALUES (?, ?)",
+                (cid, packed),
+            )
+            vec_sidecar.dual_write(con, cid, packed, region)
         con.execute("COMMIT")
         return cid
     except Exception:

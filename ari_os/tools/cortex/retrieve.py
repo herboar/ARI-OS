@@ -604,8 +604,12 @@ def retrieve(
         elif _posture == "global":
             _dnsig = _posture_cfg.get("global_dn_sigma", _dnsig)
 
-    embed_client = embed_client or EmbedClient()
-    qvec = embed_client.embed([query])[0]
+    from .embed import EmbedError, default_embed_client
+    embed_client = embed_client or default_embed_client()
+    try:
+        qvec = embed_client.embed([query])[0]
+    except EmbedError:
+        qvec = None  # degrade to lexical-only retrieval
     _task_type = mode
     _task_confidence = None
     _task_abstained = False  # tie / low-confidence / missing embedding
@@ -644,7 +648,7 @@ def retrieve(
             pass
 
     _overfetch = _kv * 3 if _active_ws else _kv
-    vec_hits = vec_search(db_path, qvec, k=_overfetch)
+    vec_hits = vec_search(db_path, qvec, k=_overfetch) if qvec is not None else []
     seed_ids = [h.chunk_id for h in vec_hits]
     source_kind: dict[int, str] = {cid: "vec" for cid in seed_ids}
 
