@@ -63,7 +63,7 @@ def _emit_block(cwd: str, query: str, *, harness: str | None = None) -> str:
     """
     from ari_os.tools.cortex import config as _config
     from ari_os.tools.cortex import retrieve as _retrieve
-    from ari_os.tools.cortex.embed import EmbedClient
+    from ari_os.tools.cortex.embed import EmbedClient, default_embed_client
 
     db = _config.brain_db_path()
     if not db.exists():
@@ -73,7 +73,7 @@ def _emit_block(cwd: str, query: str, *, harness: str | None = None) -> str:
         result = _retrieve.retrieve(
             db,
             query=query,
-            embed_client=EmbedClient(),
+            embed_client=default_embed_client(),
             cwd=cwd,
             mode="default",
             posture="tunnel",

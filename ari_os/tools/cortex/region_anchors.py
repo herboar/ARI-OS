@@ -186,7 +186,7 @@ def zscores_for_pool(
         return None
 
     from .db import connect
-    from .embed import unpack_embedding
+    from .embed import unpack_embedding, default_embed_client
 
     ids = [c.chunk_id for c in pool]
     con = connect(db_path)
@@ -238,11 +238,11 @@ def rebuild_anchors(
     import numpy as np
 
     if embed_client is None:
-        from .embed import EmbedClient
-        embed_client = EmbedClient()
+        from .embed import EmbedClient, default_embed_client
+        embed_client = default_embed_client()
 
     from .db import connect
-    from .embed import unpack_embedding
+    from .embed import unpack_embedding, default_embed_client
 
     anchors: dict[str, list[float]] = {}
     for region in REGIONS:

@@ -34,8 +34,8 @@ def remember(
         digest = hashlib.sha256(text.encode("utf-8")).hexdigest()[:16]
         source = f"remember:{digest}"
     if embed_client is None:
-        from .embed import EmbedClient
-        embed_client = EmbedClient()
+        from .embed import EmbedClient, default_embed_client
+        embed_client = default_embed_client()
 
     cid = index.index_text(
         db_path,

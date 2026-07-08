@@ -14,7 +14,7 @@ from pathlib import Path
 
 from . import config
 from .db import connect
-from .embed import EmbedClient
+from .embed import EmbedClient, default_embed_client
 from .retrieve import RankedChunk, _hydrate, expand_via_tracts, retrieve, vec_search
 
 DMN_REGIONS = {"hippocampus", "vmpfc"}
@@ -133,6 +133,8 @@ def _focus_confidence(distances: list[float], ws_per_hit: list[str | None]) -> f
 
 def _focus_near_set(db_path: Path, focus_text: str, embed_client: EmbedClient, k: int = 8):
     query_vec = embed_client.embed([focus_text])[0]
+    if query_vec is None:  # no embedding backend: wander cannot fire
+        return [], set(), [], []
     hits = vec_search(db_path, query_vec, k=k)
     ids = [hit.chunk_id for hit in hits]
     distances = [hit.distance for hit in hits]
@@ -196,7 +198,7 @@ def wander(
             pass
 
     rng = random.Random(rng_seed)
-    embed_client = embed_client or EmbedClient()
+    embed_client = embed_client or default_embed_client()
     focus_ids, focus_workspaces, focus_distances, focus_ws_per_hit = _focus_near_set(
         db_path, focus_text, embed_client, k=k_focus
     )
@@ -304,7 +306,7 @@ def surface_pass(
     """Run a global re-orientation retrieval and render its banner."""
     if not config.wander_enabled(True):
         return ""
-    embed_client = embed_client or EmbedClient()
+    embed_client = embed_client or default_embed_client()
     result = retrieve(
         db_path,
         focus_text,

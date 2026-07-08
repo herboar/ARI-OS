@@ -216,8 +216,8 @@ def rebuild_centroids(
     shipped neutral defaults.
     """
     if embed_client is None:
-        from .embed import EmbedClient
-        embed_client = EmbedClient()
+        from .embed import EmbedClient, default_embed_client
+        embed_client = default_embed_client()
 
     centroids: dict[str, list[float]] = {}
     for task_type in TASK_TYPES:

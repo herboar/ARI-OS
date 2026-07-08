@@ -135,7 +135,7 @@ def test_hook_with_seeded_db_prints_regioned_block(
     # The hook synthesises "<basename> project context" — match it exactly.
     monkeypatch.setattr("ari_os.tools.cortex.config.brain_db_path", lambda: brain_db)
     monkeypatch.setattr(
-        "ari_os.tools.cortex.embed.EmbedClient",
+        "ari_os.tools.cortex.embed.default_embed_client",
         lambda: _StubEmbed({f"{cwd.name} project context": qvec}),
     )
 
@@ -163,7 +163,7 @@ def test_hook_returns_block_via_run(brain_db, tmp_path, monkeypatch):
     cwd.mkdir()
     monkeypatch.setattr("ari_os.tools.cortex.config.brain_db_path", lambda: brain_db)
     monkeypatch.setattr(
-        "ari_os.tools.cortex.embed.EmbedClient",
+        "ari_os.tools.cortex.embed.default_embed_client",
         lambda: _StubEmbed({f"{cwd.name} project context": qvec}),
     )
     out = hook.run(cwd=str(cwd))
@@ -185,7 +185,7 @@ def test_hook_skill_hint_biases_query(brain_db, tmp_path, monkeypatch):
     # Query will be "<cwd> systematic-debugging context" — embed a different
     # zero vector to prove the skill hint is plumbed into the query string.
     monkeypatch.setattr(
-        "ari_os.tools.cortex.embed.EmbedClient",
+        "ari_os.tools.cortex.embed.default_embed_client",
         lambda: _StubEmbed(),  # all-zero -> nothing matches
     )
     rc = hook.main(["--cwd", str(cwd), "--skill", "systematic-debugging"])

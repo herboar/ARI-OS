@@ -165,7 +165,7 @@ def test_wander_focus_prints_block_over_populated_brain(
             region="hippocampus",
         )
     monkeypatch.setattr(
-        "ari_os.tools.cortex.embed.EmbedClient",
+        "ari_os.tools.cortex.wander.default_embed_client",
         lambda: _StubEmbed({"database migration": focus_vec}),
     )
 

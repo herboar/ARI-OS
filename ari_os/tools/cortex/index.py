@@ -450,8 +450,8 @@ def index_sweep(
             "**/*.log", "**/_archived/**", "**/_trash/**",
         ]
     if embed_client is None:
-        from .embed import EmbedClient  # late import: embed.py lands in ar.t5
-        embed_client = EmbedClient()
+        from .embed import default_embed_client  # late import: embed.py lands in ar.t5
+        embed_client = default_embed_client()
 
     stats: dict[str, int] = {"scanned": 0, "indexed": 0, "errors": 0}
     for change in scan_changed_files(db_path, roots, excludes):

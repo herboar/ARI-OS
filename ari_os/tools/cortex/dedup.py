@@ -12,7 +12,7 @@ from collections.abc import Iterator
 from dataclasses import dataclass
 from pathlib import Path
 
-from .embed import EmbedClient
+from .embed import EmbedClient, default_embed_client
 from .similarity import cosine
 
 
@@ -127,7 +127,7 @@ def run_dedup_check(
             ],
         }
 
-    client = embed_client or EmbedClient()
+    client = embed_client or default_embed_client()
     all_texts = [entry.description for entry in candidates] + [
         description for _, description in memory_descs
     ]
