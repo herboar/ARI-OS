@@ -11,7 +11,7 @@ from pathlib import Path
 from .. import paths
 from . import state
 
-EXECUTORS = {"haiku", "sonnet", "opus"}
+EXECUTORS = {"haiku", "sonnet", "opus", "fable"}
 _READONLY_TOOLS = "Write,Edit,MultiEdit,NotebookEdit"
 _FALSEY = {"0", "false", "no"}
 
