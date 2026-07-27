@@ -155,9 +155,12 @@ class EmbedClient:
 # ---------------------------------------------------------------------------
 
 # Default model used by the `api` backend when the caller doesn't override.
-# 768-d matches the schema's vec0 column. Override via ARI_OS_EMBED_MODEL env
-# (already wired through .config.EMBED_MODEL).
-API_DEFAULT_MODEL = "text-embedding-004"
+# gemini-embedding-001 returns 768-d when the request sets outputDimensionality
+# (see _api_embed_one), matching the schema's vec0 column. Override via
+# ARI_OS_EMBED_MODEL env (already wired through .config.EMBED_MODEL).
+# Note: text-embedding-004's embedContent endpoint was retired by Google
+# (404 as of 2026-07) — do not revert to it.
+API_DEFAULT_MODEL = "gemini-embedding-001"
 _API_ENDPOINT = "https://generativelanguage.googleapis.com/v1beta/models/{model}:embedContent"
 
 
