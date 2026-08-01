@@ -35,6 +35,7 @@ from . import config
 from .config import ASSEMBLER_ENABLED
 from .db import connect
 from .embed import EmbedClient, pack_embedding
+from .workspace_map import cwd_to_workspace as _cwd_to_workspace
 
 # Sufficiency gate parked: the shipped L2 distances are un-normalized, so dense
 # distance is an unreliable sufficiency signal. Hybrid recall (the proven half)
@@ -206,19 +207,13 @@ SOURCE_WEIGHTS = {"vec": 1.0, "sparse": 1.0, "adjacent": 0.4, "kg": 0.5}
 
 
 def cwd_to_workspace(cwd: str | None) -> str | None:
-    """Map a cwd path to its workspace name.
+    """Map a cwd path to its workspace slug.
 
-    Looks for 'workspaces' in path parts and returns the next component.
-    Returns None if cwd is not under a workspaces/ subtree.
+    Delegates to :mod:`.workspace_map` — configured ``cortex.workspace_roots``
+    first, legacy ``workspaces/`` layout as fallback. Kept as a re-export so
+    retrieval callers keep a single import site.
     """
-    if not cwd:
-        return None
-    parts = Path(cwd).parts
-    if "workspaces" in parts:
-        i = parts.index("workspaces")
-        if i + 1 < len(parts):
-            return parts[i + 1]
-    return None
+    return _cwd_to_workspace(cwd)
 
 
 _TOKEN_RE = re.compile(r"\w+")

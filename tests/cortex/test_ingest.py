@@ -264,6 +264,120 @@ def test_index_file_is_idempotent(
     assert n == 2
 
 
+# ---------- workspace tagging -----------------------------------------------
+
+@pytest.fixture
+def ws_root(tmp_path, monkeypatch) -> Path:
+    """Isolated $ARI_OS_HOME plus one configured workspace root with a repo."""
+    home = tmp_path / "arios-home"
+    home.mkdir()
+    monkeypatch.setenv("ARI_OS_HOME", str(home))
+    root = tmp_path / "Projects"
+    (root / "EA_xfactor").mkdir(parents=True)
+    (home / "config.json").write_text(
+        json.dumps({"cortex.workspace_roots": [str(root)]})
+    )
+    return root
+
+
+def _write_transcript_with_cwds(path: Path, cwds: list[str | None]) -> None:
+    """Minimal CC transcript: one clean user record per cwd (None = no cwd)."""
+    with path.open("w") as f:
+        for i, cwd in enumerate(cwds):
+            rec = {
+                "type": "user",
+                "sessionId": "sess-ws",
+                "timestamp": f"2026-08-01T12:00:{i:02d}Z",
+                "message": {"role": "user", "content": [
+                    {"type": "text", "text": f"turn {i} with enough text to embed"},
+                ]},
+            }
+            if cwd is not None:
+                rec["cwd"] = cwd
+            f.write(json.dumps(rec) + "\n")
+
+
+def _source_workspace(brain_db: Path, path: Path) -> str | None:
+    con = db.connect(brain_db)
+    try:
+        row = con.execute(
+            "SELECT workspace FROM source WHERE path = ?", (str(path),)
+        ).fetchone()
+    finally:
+        con.close()
+    assert row is not None, "source row missing"
+    return row[0]
+
+
+def test_transcript_ingest_tags_workspace_from_record_cwds(
+    brain_db, tmp_path, stub_embed, ws_root
+):
+    p = tmp_path / "ws.jsonl"
+    _write_transcript_with_cwds(p, [str(ws_root / "EA_xfactor" / "content-engine")] * 2)
+    index.index_file(brain_db, p, layer="episodic", embed_client=stub_embed)
+    assert _source_workspace(brain_db, p) == "ea-xfactor"
+
+
+def test_transcript_ingest_majority_cwd_wins(brain_db, tmp_path, stub_embed, ws_root):
+    """One stray record (subagent hop / --cwd override) must not retag the file."""
+    p = tmp_path / "mixed.jsonl"
+    _write_transcript_with_cwds(p, [
+        str(ws_root / "EA_xfactor"),
+        str(ws_root / "Other_Repo"),
+        str(ws_root / "EA_xfactor"),
+    ])
+    index.index_file(brain_db, p, layer="episodic", embed_client=stub_embed)
+    assert _source_workspace(brain_db, p) == "ea-xfactor"
+
+
+def test_transcript_ingest_falls_back_to_encoded_dirname(
+    brain_db, tmp_path, stub_embed, ws_root
+):
+    """No record carries a cwd → match the lossy CC project dirname."""
+    from ari_os.tools.cortex.workspace_map import encode_cc_project_dirname
+
+    proj_dir = tmp_path / f"{encode_cc_project_dirname(str(ws_root))}-EA-xfactor"
+    proj_dir.mkdir()
+    p = proj_dir / "nocwd.jsonl"
+    _write_transcript_with_cwds(p, [None, None])
+    index.index_file(brain_db, p, layer="episodic", embed_client=stub_embed)
+    assert _source_workspace(brain_db, p) == "ea-xfactor"
+
+
+def test_transcript_ingest_outside_roots_stays_untagged(
+    brain_db, tmp_path, stub_embed, ws_root
+):
+    p = tmp_path / "outside.jsonl"
+    _write_transcript_with_cwds(p, ["/somewhere/else"])
+    index.index_file(brain_db, p, layer="episodic", embed_client=stub_embed)
+    assert _source_workspace(brain_db, p) is None
+
+
+def test_memory_file_ingest_tags_workspace_folder(brain_db, stub_embed, ws_root):
+    """$ARI_OS_HOME/memories/<ws>/*.md tags as <ws> (matches --path re-ingest)."""
+    mem = config.state_home() / "memories" / "ea-xfactor"
+    mem.mkdir(parents=True)
+    md = mem / "note.md"
+    md.write_text("## Note\na memory worth keeping\n")
+    index.set_markdown_indexing(True)
+    try:
+        index.index_file(brain_db, md, layer="semantic", embed_client=stub_embed)
+    finally:
+        index.set_markdown_indexing(False)
+    assert _source_workspace(brain_db, md) == "ea-xfactor"
+
+
+def test_markdown_ingest_under_root_tags_workspace(brain_db, stub_embed, ws_root):
+    md = ws_root / "EA_xfactor" / "doc.md"
+    md.write_text("## A\nhello world\n")
+    index.set_markdown_indexing(True)
+    try:
+        index.index_file(brain_db, md, layer="semantic", embed_client=stub_embed)
+    finally:
+        index.set_markdown_indexing(False)
+    assert _source_workspace(brain_db, md) == "ea-xfactor"
+
+
 # ---------- index_text (/remember path) -------------------------------------
 
 def test_index_text_writes_a_single_chunk(brain_db, stub_embed):

@@ -23,6 +23,7 @@ from ari_os.tools.cortex.db import connect
 from ari_os.tools.cortex.llm import get_llm
 from ari_os.tools.cortex.llm.base import BrainLLM
 from ari_os.tools.cortex.model_routing import model_for_stage
+from ari_os.tools.cortex.workspace_map import path_to_workspace
 
 logger = logging.getLogger(__name__)
 
@@ -454,6 +455,11 @@ def _group_workspace(path: str | None, workspace: str | None = None) -> str:
         return workspace
     if not path:
         return "misc"
+    # Configured workspace roots + memories tree first (shared mapper);
+    # legacy=False keeps the historical "workspaces/<name>" label below.
+    mapped = path_to_workspace(path, legacy=False)
+    if mapped:
+        return mapped
     parts = [part for part in Path(path).parts if part not in {"", "."}]
     if "workspaces" in parts:
         idx = parts.index("workspaces")
