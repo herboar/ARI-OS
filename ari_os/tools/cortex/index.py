@@ -27,6 +27,7 @@ import glob
 import hashlib
 import sqlite3
 import time
+from collections import Counter
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
@@ -37,6 +38,7 @@ from . import vec_sidecar
 from .chunker import chunk_markdown
 from .config import state_home
 from .transcript_filter import filter_jsonl
+from .workspace_map import cwd_to_workspace, path_to_workspace, transcript_dir_to_workspace
 
 
 # --- Defaults ---------------------------------------------------------------
@@ -129,6 +131,27 @@ def _classify_region(path: Path, *, layer: str, content_kind: str | None) -> str
         "episodic": "hippocampus",
         "short_term": "hippocampus",
     }.get(layer, "wernicke")
+
+
+def _transcript_workspace(path: Path, segments) -> str | None:
+    """Workspace slug for a CC transcript: majority vote over record cwds.
+
+    Majority (not first-non-null) so one stray record — a subagent hop or a
+    ``--cwd`` override mid-session — cannot retag the whole file; ties break
+    toward the earliest-seen workspace. When no record carries a usable cwd,
+    fall back to matching the lossy ``~/.claude/projects/<encoded>`` dirname
+    against known children of the configured roots.
+    """
+    votes: Counter[str] = Counter()
+    order: dict[str, int] = {}
+    for seg in segments:
+        ws = cwd_to_workspace(seg.cwd)
+        if ws:
+            order.setdefault(ws, len(order))
+            votes[ws] += 1
+    if votes:
+        return max(votes, key=lambda w: (votes[w], -order[w]))
+    return transcript_dir_to_workspace(path)
 
 
 def _importance_for(layer: str, region: str, text: str, mtime: int) -> float:
@@ -265,7 +288,7 @@ def index_file(
     con = _db.connect(db_path)
     try:
         con.execute("BEGIN IMMEDIATE")
-        source_id = mark_indexed(con, path, sha, mtime, layer, None)
+        source_id = mark_indexed(con, path, sha, mtime, layer, path_to_workspace(path))
         # Drop any previous chunks for this source
         old_ids = [r[0] for r in con.execute(
             "SELECT id FROM chunk WHERE source_id = ?", (source_id,)
@@ -331,10 +354,12 @@ def _index_jsonl(
     # seconds on long transcripts.
     embeddings = embed_client.embed([m[1] for m in seg_meta]) if seg_meta else []
 
+    workspace = _transcript_workspace(path, segments)
+
     con = _db.connect(db_path)
     try:
         con.execute("BEGIN IMMEDIATE")
-        source_id = mark_indexed(con, path, sha, mtime, layer, None)
+        source_id = mark_indexed(con, path, sha, mtime, layer, workspace)
         old_ids = [r[0] for r in con.execute(
             "SELECT id FROM chunk WHERE source_id = ?", (source_id,)
         ).fetchall()]
