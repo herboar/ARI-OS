@@ -1,0 +1,670 @@
+{
+ "schema": 1,
+ "generated_at": "2026-08-08T14:29:01.027394+00:00",
+ "duration_ms": 112,
+ "slept": false,
+ "errors": [
+  {
+   "scope": "actors",
+   "message": "1 unattributed session: cwd /private/tmp/parallel-audit/rules"
+  }
+ ],
+ "repos": [
+  {
+   "key": "animarek",
+   "name": "Animarek",
+   "path": "/Users/mmarek/Desktop/ClaudeCode_Projects/EA_Animarek",
+   "base": "main",
+   "head": {
+    "sha": "c5f2c1e",
+    "subject": "content(early-ai-adopters): round 5 partial (8/12 workers) + classroom structure finding",
+    "when": "2026-08-08T14:25:34+00:00",
+    "author": "Matias Marek",
+    "age_s": 207
+   },
+   "activity": {
+    "commits_1h": 5,
+    "commits_24h": 14,
+    "actors_24h": 1
+   },
+   "totals": {
+    "lanes": 1,
+    "unmerged_commits": 0,
+    "uncommitted_files": 0
+   },
+   "lanes": [
+    {
+     "id": "animarek:main",
+     "kind": "main",
+     "name": "main",
+     "purpose": null,
+     "purpose_source": null,
+     "path": "/Users/mmarek/Desktop/ClaudeCode_Projects/EA_Animarek",
+     "branch": "main",
+     "head": {
+      "sha": "c5f2c1e",
+      "subject": "content(early-ai-adopters): round 5 partial (8/12 workers) + classroom structure finding",
+      "when": "2026-08-08T14:25:34+00:00",
+      "age_s": 207
+     },
+     "git": {
+      "ahead": 0,
+      "behind": 0,
+      "modified": 4,
+      "staged": 0,
+      "untracked": 159,
+      "merged_into_base": true
+     },
+     "verdict": "CLEAN",
+     "verdict_reason": "main working tree",
+     "age_days": 0,
+     "size_bytes": null,
+     "actors": [
+      {
+       "id": "session:97bf9fa4",
+       "kind": "session",
+       "label": "interactive (VS Code)",
+       "read_only": false,
+       "liveness": "live",
+       "evidence": "transcript wrote 6s ago",
+       "last_seen_age_s": 6,
+       "conflict": false,
+       "source": "transcript"
+      },
+      {
+       "id": "session:2e8b78d0",
+       "kind": "session",
+       "label": "skool corpus",
+       "read_only": false,
+       "liveness": "cold",
+       "evidence": "pid 37854 dead, but log wrote 12s ago",
+       "last_seen_age_s": 12,
+       "conflict": true,
+       "source": "ari-os-log"
+      }
+     ],
+     "overlaps": [],
+     "overlap_files": [],
+     "history": [
+      {
+       "when": "2026-08-08T14:25:34+00:00",
+       "age": "today",
+       "sha": "c5f2c1e",
+       "who": "Matias Marek",
+       "what": "content(early-ai-adopters): round 5 partial (8/12 workers) + classroom structure finding"
+      },
+      {
+       "when": "2026-08-08T14:17:25+00:00",
+       "age": "today",
+       "sha": "5d148e5",
+       "who": "Matias Marek",
+       "what": "content(early-ai-adopters): 90 cards (round 4) + duplicate stubs applied"
+      },
+      {
+       "when": "2026-08-08T13:50:43+00:00",
+       "age": "today",
+       "sha": "4e1d000",
+       "who": "Matias Marek",
+       "what": "tool(skool): situations index + card worker brief on disk"
+      },
+      {
+       "when": "2026-08-08T13:44:01+00:00",
+       "age": "today",
+       "sha": "ab91f08",
+       "who": "Matias Marek",
+       "what": "content(early-ai-adopters): 60 more cards (round 3) + round-2 supervisor rulings"
+      },
+      {
+       "when": "2026-08-08T13:43:21+00:00",
+       "age": "today",
+       "sha": "aeeacda",
+       "who": "Matias Marek",
+       "what": "spec(lane-board): three modern visual directions \u2014 rail, cards, dense"
+      },
+      {
+       "when": "2026-08-08T03:17:12+00:00",
+       "age": "today",
+       "sha": "1237148",
+       "who": "Matias Marek",
+       "what": "lab(marketplace): FB Marketplace scraper + M4/M5 iPad spec parser"
+      },
+      {
+       "when": "2026-08-08T03:10:19+00:00",
+       "age": "today",
+       "sha": "d80d4ea",
+       "who": "Matias Marek",
+       "what": "content(early-ai-adopters): 30 more lesson cards (round 2)"
+      },
+      {
+       "when": "2026-08-08T02:43:05+00:00",
+       "age": "today",
+       "sha": "1361d74",
+       "who": "Matias Marek",
+       "what": "spec(lane-board): visual decision doc \u2014 six choices rendered as the board itself"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "key": "xfactor",
+   "name": "X-Factor",
+   "path": "/Users/mmarek/Desktop/ClaudeCode_Projects/EA-xfactor",
+   "base": "main",
+   "head": {
+    "sha": "ec56f335",
+    "subject": "transcripts: diarized record of the 2026-08-07 Mica session",
+    "when": "2026-08-08T03:16:06+00:00",
+    "author": "Matias Marek",
+    "age_s": 40375
+   },
+   "activity": {
+    "commits_1h": 0,
+    "commits_24h": 20,
+    "actors_24h": 1
+   },
+   "totals": {
+    "lanes": 6,
+    "unmerged_commits": 45,
+    "uncommitted_files": 27
+   },
+   "lanes": [
+    {
+     "id": "xfactor:main",
+     "kind": "main",
+     "name": "main",
+     "purpose": null,
+     "purpose_source": null,
+     "path": "/Users/mmarek/Desktop/ClaudeCode_Projects/EA-xfactor",
+     "branch": "main",
+     "head": {
+      "sha": "ec56f335",
+      "subject": "transcripts: diarized record of the 2026-08-07 Mica session",
+      "when": "2026-08-08T03:16:06+00:00",
+      "age_s": 40375
+     },
+     "git": {
+      "ahead": 0,
+      "behind": 0,
+      "modified": 12,
+      "staged": 0,
+      "untracked": 1352,
+      "merged_into_base": true
+     },
+     "verdict": "CLEAN",
+     "verdict_reason": "main working tree",
+     "age_days": 0,
+     "size_bytes": null,
+     "actors": [],
+     "overlaps": [],
+     "overlap_files": [],
+     "history": [
+      {
+       "when": "2026-08-08T03:16:06+00:00",
+       "age": "today",
+       "sha": "ec56f335",
+       "who": "Matias Marek",
+       "what": "transcripts: diarized record of the 2026-08-07 Mica session"
+      },
+      {
+       "when": "2026-08-07T23:07:01+00:00",
+       "age": "today",
+       "sha": "5858067b",
+       "who": "Matias Marek",
+       "what": "docs: cut the Eden bug report to ~120 words"
+      },
+      {
+       "when": "2026-08-07T23:02:25+00:00",
+       "age": "today",
+       "sha": "7795a368",
+       "who": "Matias Marek",
+       "what": "docs: refile the Eden TikTok carousel post as a bug, not a feature request"
+      },
+      {
+       "when": "2026-08-07T23:00:34+00:00",
+       "age": "today",
+       "sha": "0ee73a18",
+       "who": "Matias Marek",
+       "what": "docs: add the public board version of the Eden TikTok carousel post"
+      },
+      {
+       "when": "2026-08-07T22:59:00+00:00",
+       "age": "today",
+       "sha": "41dad2f5",
+       "who": "Matias Marek",
+       "what": "docs: paste-ready Eden support question on TikTok carousels"
+      },
+      {
+       "when": "2026-08-07T21:58:47+00:00",
+       "age": "today",
+       "sha": "28e528fa",
+       "who": "Matias Marek",
+       "what": "docs: the TikTok carousel block is Eden's, not TikTok's"
+      },
+      {
+       "when": "2026-08-07T21:54:33+00:00",
+       "age": "today",
+       "sha": "e6a8a282",
+       "who": "Matias Marek",
+       "what": "TikTok connected: route today's video, record the carousel limit"
+      },
+      {
+       "when": "2026-08-07T21:52:45+00:00",
+       "age": "today",
+       "sha": "9c8e751a",
+       "who": "Matias Marek",
+       "what": "pendings/slide-editor-lanes-qa-and-merge: drop task for Mati"
+      }
+     ]
+    },
+    {
+     "id": "xfactor:broll-unit-01",
+     "kind": "worktree",
+     "name": "broll-unit-01",
+     "purpose": "First b-roll-plus-caption unit end to end",
+     "purpose_source": "lane-file",
+     "path": "/Users/mmarek/Desktop/ClaudeCode_Projects/EA-xfactor/.claude/worktrees/broll-unit-01",
+     "branch": "agent/broll-unit-01",
+     "head": {
+      "sha": "df46d671",
+      "subject": "07-validate: sync lane copy to the published record",
+      "when": "2026-08-06T19:34:34+00:00",
+      "age_s": 154467
+     },
+     "git": {
+      "ahead": 6,
+      "behind": 56,
+      "modified": 0,
+      "staged": 0,
+      "untracked": 12,
+      "merged_into_base": false
+     },
+     "verdict": "DIRTY",
+     "verdict_reason": "6 unmerged commits plus 12 uncommitted files",
+     "age_days": 1,
+     "size_bytes": null,
+     "actors": [
+      {
+       "id": "w-8a4d-broll",
+       "kind": "worker",
+       "label": "broll-unit-01",
+       "read_only": false,
+       "liveness": "warm",
+       "evidence": "pid 44120 alive, log quiet 6m",
+       "last_seen_age_s": 372,
+       "conflict": false,
+       "source": "ari-os-log"
+      }
+     ],
+     "overlaps": [],
+     "overlap_files": [],
+     "history": [
+      {
+       "when": "2026-08-06T19:34:34+00:00",
+       "age": "1d ago",
+       "sha": "df46d671",
+       "who": "Matias Marek",
+       "what": "07-validate: sync lane copy to the published record"
+      },
+      {
+       "when": "2026-08-06T19:28:27+00:00",
+       "age": "1d ago",
+       "sha": "c868ce6f",
+       "who": "Matias Marek",
+       "what": "merge main into agent/broll-unit-01 (bring lane current before handoff)"
+      },
+      {
+       "when": "2026-08-06T18:57:12+00:00",
+       "age": "1d ago",
+       "sha": "8d2f65ec",
+       "who": "Matias Marek",
+       "what": "tools/broll-unit-01: headless CapCut renderer + measured geometry rules"
+      },
+      {
+       "when": "2026-08-05T01:01:05+00:00",
+       "age": "3d ago",
+       "sha": "2eda1337",
+       "who": "Matias Marek",
+       "what": "sound/broll-unit-01: three ElevenLabs-built sound directions, mounted for A/B"
+      },
+      {
+       "when": "2026-08-04T23:25:03+00:00",
+       "age": "3d ago",
+       "sha": "df2dce88",
+       "who": "Matias Marek",
+       "what": "tools/broll-unit-01: CapCut chrome patcher + corrected stage route docs"
+      },
+      {
+       "when": "2026-08-04T21:49:10+00:00",
+       "age": "3d ago",
+       "sha": "eda2b09a",
+       "who": "Matias Marek",
+       "what": "content/broll-unit-01: plan + assets for 2026-08-06 not-the-one-driving"
+      }
+     ]
+    },
+    {
+     "id": "xfactor:dp2-2b2",
+     "kind": "worktree",
+     "name": "dp2-2b2",
+     "purpose": "2B-2 looping muted video/GIF backgrounds, layer-level media",
+     "purpose_source": "lane-file",
+     "path": "/Users/mmarek/Desktop/ClaudeCode_Projects/EA-xfactor/.claude/worktrees/dp2-2b2",
+     "branch": "feat/dp2-2b2",
+     "head": {
+      "sha": "861fd07b",
+      "subject": "slide_editor: final fix wave for the 2B-2 branch review",
+      "when": "2026-08-06T21:26:06+00:00",
+      "age_s": 147775
+     },
+     "git": {
+      "ahead": 18,
+      "behind": 85,
+      "modified": 0,
+      "staged": 0,
+      "untracked": 0,
+      "merged_into_base": false
+     },
+     "verdict": "MERGE",
+     "verdict_reason": "18 commits nobody has integrated",
+     "age_days": 1,
+     "size_bytes": null,
+     "actors": [],
+     "overlaps": [
+      "xfactor:editor-ux-batch"
+     ],
+     "overlap_files": [
+      "content-engine/tools/slide_editor/static/render.js",
+      "content-engine/tools/slide_editor/static/editor.js",
+      "content-engine/tools/slide_editor/static/editor-panels.js",
+      "content-engine/tools/slide_editor/static/selftest.js",
+      "content-engine/tools/slide_editor/server.py",
+      "content-engine/tools/slide_editor/README.md"
+     ],
+     "history": [
+      {
+       "when": "2026-08-06T21:26:06+00:00",
+       "age": "1d ago",
+       "sha": "861fd07b",
+       "who": "Matias Marek",
+       "what": "slide_editor: final fix wave for the 2B-2 branch review"
+      },
+      {
+       "when": "2026-08-06T19:24:24+00:00",
+       "age": "1d ago",
+       "sha": "691b4bb6",
+       "who": "Matias Marek",
+       "what": "slide_editor: README video media section"
+      },
+      {
+       "when": "2026-08-06T19:24:17+00:00",
+       "age": "1d ago",
+       "sha": "cf9e892b",
+       "who": "Matias Marek",
+       "what": "content-engine: video background wiring in carousel router (2B-2)"
+      },
+      {
+       "when": "2026-08-05T15:56:02+00:00",
+       "age": "2d ago",
+       "sha": "dcdfdad2",
+       "who": "Matias Marek",
+       "what": "slide_editor: one retry per slide when a screenshot never lands"
+      },
+      {
+       "when": "2026-08-05T15:40:18+00:00",
+       "age": "2d ago",
+       "sha": "e5ba289d",
+       "who": "Matias Marek",
+       "what": "slide_editor: a capture must follow a seek that really happened"
+      },
+      {
+       "when": "2026-08-05T00:35:22+00:00",
+       "age": "3d ago",
+       "sha": "57cc77d6",
+       "who": "Matias Marek",
+       "what": "carousel/templates: xf-drift subtle-motion template (asset pending, fail-soft)"
+      },
+      {
+       "when": "2026-08-04T23:30:47+00:00",
+       "age": "3d ago",
+       "sha": "1706254a",
+       "who": "Matias Marek",
+       "what": "slide_editor: still-pinned PNG URLs, selftest budget, export abort hygiene"
+      },
+      {
+       "when": "2026-08-04T22:52:57+00:00",
+       "age": "3d ago",
+       "sha": "3f3dd73c",
+       "who": "Matias Marek",
+       "what": "slide_editor: video export verb (CDP frame stepping, ffmpeg assembly)"
+      }
+     ]
+    },
+    {
+     "id": "xfactor:editor-ux-batch",
+     "kind": "worktree",
+     "name": "editor-ux-batch",
+     "purpose": "Editor UX batch: unique-BG model, stable panels, delete slide, real seed-fit",
+     "purpose_source": "lane-file",
+     "path": "/Users/mmarek/Desktop/ClaudeCode_Projects/EA-xfactor/.claude/worktrees/editor-ux-batch",
+     "branch": "feat/editor-ux-batch",
+     "head": {
+      "sha": "51806694",
+      "subject": "slide_editor: scope the undo chord exemption to the properties panel",
+      "when": "2026-08-06T23:01:48+00:00",
+      "age_s": 142033
+     },
+     "git": {
+      "ahead": 20,
+      "behind": 85,
+      "modified": 0,
+      "staged": 0,
+      "untracked": 0,
+      "merged_into_base": false
+     },
+     "verdict": "MERGE",
+     "verdict_reason": "20 commits nobody has integrated",
+     "age_days": 1,
+     "size_bytes": null,
+     "actors": [],
+     "overlaps": [
+      "xfactor:dp2-2b2"
+     ],
+     "overlap_files": [
+      "content-engine/tools/slide_editor/static/render.js",
+      "content-engine/tools/slide_editor/static/editor.js",
+      "content-engine/tools/slide_editor/static/editor-panels.js",
+      "content-engine/tools/slide_editor/static/selftest.js",
+      "content-engine/tools/slide_editor/server.py",
+      "content-engine/tools/slide_editor/README.md"
+     ],
+     "history": [
+      {
+       "when": "2026-08-06T23:01:48+00:00",
+       "age": "1d ago",
+       "sha": "51806694",
+       "who": "Matias Marek",
+       "what": "slide_editor: scope the undo chord exemption to the properties panel"
+      },
+      {
+       "when": "2026-08-06T22:31:26+00:00",
+       "age": "1d ago",
+       "sha": "3ee1033b",
+       "who": "Matias Marek",
+       "what": "slide_editor: undo chords clear the input-focus guard, two comment fixes, real contains() assertion"
+      },
+      {
+       "when": "2026-08-06T21:54:52+00:00",
+       "age": "1d ago",
+       "sha": "b2f930d3",
+       "who": "Matias Marek",
+       "what": "slide_editor: final review-wave fixes for the editor UX batch"
+      },
+      {
+       "when": "2026-08-06T19:50:32+00:00",
+       "age": "1d ago",
+       "sha": "f087cf88",
+       "who": "Matias Marek",
+       "what": "content-engine: deck background package semantics in the carousel router"
+      },
+      {
+       "when": "2026-08-06T19:50:05+00:00",
+       "age": "1d ago",
+       "sha": "0b4d9925",
+       "who": "Matias Marek",
+       "what": "slide_editor: restyle sweep length guards, y-whitelist guard, README for the editor UX batch"
+      },
+      {
+       "when": "2026-08-06T19:29:21+00:00",
+       "age": "1d ago",
+       "sha": "538085e7",
+       "who": "Matias Marek",
+       "what": "slide_editor: keyboard selftest targets the scale slider by id, rotation row width asserted"
+      },
+      {
+       "when": "2026-08-05T19:29:46+00:00",
+       "age": "2d ago",
+       "sha": "a755973c",
+       "who": "Matias Marek",
+       "what": "slide_editor: placement sync live both directions, rotation slider, unified scale and rotation ranges"
+      },
+      {
+       "when": "2026-08-05T00:38:02+00:00",
+       "age": "3d ago",
+       "sha": "9743d294",
+       "who": "Matias Marek",
+       "what": "slide_editor: seed-fit fix round 1 (CTA keeps authored positions, clamp coverage, stale boot comments)"
+      }
+     ]
+    },
+    {
+     "id": "xfactor:reel-covers",
+     "kind": "worktree",
+     "name": "reel-covers",
+     "purpose": "Reel covers for phone-drive (post 18) + survival-mode (post 20)",
+     "purpose_source": "lane-file",
+     "path": "/Users/mmarek/Desktop/ClaudeCode_Projects/EA-xfactor/.claude/worktrees/reel-covers",
+     "branch": "agent/reel-covers",
+     "head": {
+      "sha": "7b3fc907",
+      "subject": "web: snapshot in-flight dopamine-page work from the session scratchpad",
+      "when": "2026-08-01T04:30:15+00:00",
+      "age_s": 640726
+     },
+     "git": {
+      "ahead": 0,
+      "behind": 144,
+      "modified": 1,
+      "staged": 0,
+      "untracked": 14,
+      "merged_into_base": true
+     },
+     "verdict": "RESCUE",
+     "verdict_reason": "merged or 0 ahead, but 14 untracked and 1 modified remain",
+     "age_days": 7,
+     "size_bytes": null,
+     "actors": [],
+     "overlaps": [],
+     "overlap_files": [],
+     "history": [
+      {
+       "when": "2026-08-01T04:30:15+00:00",
+       "age": "7d ago",
+       "sha": "7b3fc907",
+       "who": "Matias Marek",
+       "what": "web: snapshot in-flight dopamine-page work from the session scratchpad"
+      },
+      {
+       "when": "2026-08-01T02:07:32+00:00",
+       "age": "7d ago",
+       "sha": "f75abcda",
+       "who": "Matias Marek",
+       "what": "web: persist the dopamine-experiment page (3 designs) + reel-cover format findings"
+      },
+      {
+       "when": "2026-07-31T06:35:32+00:00",
+       "age": "8d ago",
+       "sha": "4a255b95",
+       "who": "Matias Marek",
+       "what": "docs: capture both Reel cover layouts as reference"
+      },
+      {
+       "when": "2026-07-31T06:35:32+00:00",
+       "age": "8d ago",
+       "sha": "61d59b17",
+       "who": "Matias Marek",
+       "what": "covers: Reel cover decks for phone-drive (post 18) + survival-mode (post 20)"
+      },
+      {
+       "when": "2026-07-30T19:27:43+00:00",
+       "age": "8d ago",
+       "sha": "7760652e",
+       "who": "Matias Marek",
+       "what": "briefs: wave-2 autonomous build plan (Bucket A+C, D2, gates + safety model)"
+      },
+      {
+       "when": "2026-07-30T19:19:06+00:00",
+       "age": "8d ago",
+       "sha": "8ff5e6e6",
+       "who": "Matias Marek",
+       "what": "briefs: backlog status Phase-2 build 1 built + capture A7 recent-colors and D2 per-word typography (Mati 2026-07-30)"
+      },
+      {
+       "when": "2026-07-30T11:56:16+00:00",
+       "age": "9d ago",
+       "sha": "3c6be676",
+       "who": "Matias Marek",
+       "what": "lab/specs: annotate D1 spec 3.5 with as-built token-layer behavior (final-review follow-up)"
+      },
+      {
+       "when": "2026-07-30T00:52:39+00:00",
+       "age": "9d ago",
+       "sha": "0001375a",
+       "who": "Matias Marek",
+       "what": "lab/specs: D1/M2/M1 implementation plan (9 tasks, TDD, subagent-ready)"
+      }
+     ]
+    },
+    {
+     "id": "xfactor:script-issue01",
+     "kind": "worktree",
+     "name": "script-issue01",
+     "purpose": "PARKED 2026-08-04 \u2014 DTC pilot, pending the outperforming-DTC study",
+     "purpose_source": "lane-file",
+     "path": "/Users/mmarek/Desktop/ClaudeCode_Projects/EA-xfactor/.claude/worktrees/script-issue01",
+     "branch": "agent/script-issue01",
+     "head": {
+      "sha": "a410731b",
+      "subject": "content/03-plan: DTC plan derived from newsletter issue #1 (SP12 card 4 pilot)",
+      "when": "2026-08-04T20:17:21+00:00",
+      "age_s": 324700
+     },
+     "git": {
+      "ahead": 1,
+      "behind": 68,
+      "modified": 0,
+      "staged": 0,
+      "untracked": 0,
+      "merged_into_base": false
+     },
+     "verdict": "PARKED",
+     "verdict_reason": "parked by Mati 2026-08-04",
+     "age_days": 3,
+     "size_bytes": null,
+     "actors": [],
+     "overlaps": [],
+     "overlap_files": [],
+     "history": [
+      {
+       "when": "2026-08-04T20:17:21+00:00",
+       "age": "3d ago",
+       "sha": "a410731b",
+       "who": "Matias Marek",
+       "what": "content/03-plan: DTC plan derived from newsletter issue #1 (SP12 card 4 pilot)"
+      }
+     ]
+    }
+   ]
+  }
+ ]
+}
