@@ -87,7 +87,11 @@ def _reconcile_unlocked(workers: list[dict], persist: bool) -> list[dict]:
     for w in workers:
         if w.get("status") == "done":
             continue
-        if w.get("id", "") in open_q:
+        # Question files are named by worker id OR by label: worker_id() makes
+        # "w-<hex4>-<label>", but every brief tells workers to write
+        # questions/<label>.md. Matching only on id meant no worker ever
+        # displayed as blocked. Accept both conventions.
+        if w.get("id", "") in open_q or w.get("label", "") in open_q:
             new = "blocked"
         elif w.get("pid") is not None and not pid_alive(w["pid"]):
             new = "done"
