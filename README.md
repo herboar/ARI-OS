@@ -159,7 +159,7 @@ python3 -m ari_os.tools.arios cortex ears on    # enable audio ingest (optional)
 /brainstorm a rate limiter for the API
 
 # 2. Turn the spec into a plan, then dispatch the build to a worker:
-python3 -m ari_os.tools.dispatch start --executor sonnet \
+python3 -m ari_os.tools.dispatch start --executor sonnet --effort medium \
     --task-file BRIEF.md --cwd ./worktree --label rate-limit
 
 # 3. Watch it (and any others) in the dashboard:
@@ -174,6 +174,13 @@ python3 -m ari_os.tools.dispatch answer w-1a2b-rate-limit --answer "use a token 
 
 While that worker builds, your own session stays free. Dispatch two more. You are
 running a crew, not waiting on a queue of one.
+
+`--effort` (`low`|`medium`|`high`|`xhigh`|`max`) sets how hard the worker thinks,
+independently of which model runs it. On current models this is the sharper of
+the two dials: `low` for mechanical work, `medium` for a normal build, `xhigh`
+for agentic coding and hard reviews, `max` when correctness outranks cost. Omit
+it and the worker inherits Claude Code's default for that model. An unrecognised
+value is refused up front rather than silently downgraded.
 
 ## Why this is a more powerful way to work
 

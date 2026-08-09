@@ -22,6 +22,11 @@ from .. import paths
 from . import state
 
 EXECUTORS = {"haiku", "sonnet", "opus", "fable"}
+# `claude --effort` only WARNS on an unknown value and silently falls back to
+# the default. A detached worker writes that warning to a log nobody reads, so
+# the operator would believe a job ran at `max` while it ran at the default.
+# We validate here and refuse, rather than inherit that silent failure.
+EFFORTS = {"low", "medium", "high", "xhigh", "max"}
 _READONLY_TOOLS = "Bash,Write,Edit,MultiEdit,NotebookEdit"
 _FALSEY = {"0", "false", "no"}
 
@@ -119,8 +124,13 @@ def pid_start(pid) -> str | None:
 
 
 def build_claude_argv(executor: str, cwd: str,
-                      add_dirs: list[str], read_only: bool) -> list[str]:
+                      add_dirs: list[str], read_only: bool,
+                      effort: str | None = None) -> list[str]:
     argv = ["claude", "-p", "--model", executor]
+    # Omitted when unset, so a dispatch that names no effort keeps whatever
+    # Claude Code's default is for that model — the pre-flag behaviour.
+    if effort:
+        argv += ["--effort", effort]
     skip_permissions = os.environ.get("ARI_OS_WORKER_SKIP_PERMISSIONS", "1")
     if skip_permissions.strip().lower() not in _FALSEY:
         argv.append("--dangerously-skip-permissions")
@@ -167,6 +177,9 @@ def cmd_start(a) -> None:
     read_only = bool(getattr(a, "read_only", False))
     purpose = getattr(a, "purpose", None)
     allow_main_tree = bool(getattr(a, "allow_main_tree", False))
+    effort = getattr(a, "effort", None)
+    if effort is not None and effort not in EFFORTS:
+        sys.exit(f"Unknown effort: {effort}. One of {sorted(EFFORTS)}")
     if a.executor not in EXECUTORS:
         sys.exit(f"Unknown executor: {a.executor}. One of {sorted(EXECUTORS)}")
     if is_repo_root(a.cwd):
@@ -190,7 +203,8 @@ def cmd_start(a) -> None:
               file=sys.stderr)
     task = Path(a.task_file).read_text()
     wid = worker_id(a.label)
-    argv = build_claude_argv(a.executor, a.cwd, a.add_dir or [], read_only)
+    argv = build_claude_argv(a.executor, a.cwd, a.add_dir or [], read_only,
+                             effort)
     # Identity is resolved at spawn, while the worktree provably still exists.
     # Any git failure stores null; it never blocks a dispatch.
     worktree = worktree_of(a.cwd)
@@ -200,6 +214,7 @@ def cmd_start(a) -> None:
     with state.locked():
         workers = state.read_workers()
         workers.append({"id": wid, "label": a.label, "executor": a.executor,
+                        "effort": effort,
                         "cwd": a.cwd, "status": "running", "pid": pid,
                         "started_at": _now(),
                         "worktree": worktree, "branch": branch,
@@ -400,6 +415,10 @@ def main() -> None:
     sub = p.add_subparsers(dest="cmd", required=True)
     s = sub.add_parser("start"); s.set_defaults(fn=cmd_start)
     s.add_argument("--executor", required=True)
+    s.add_argument("--effort", default=None,
+                   help="reasoning effort for the worker: "
+                        "low|medium|high|xhigh|max. Omit to inherit Claude "
+                        "Code's default for that model.")
     s.add_argument("--task-file", required=True, dest="task_file")
     s.add_argument("--cwd", required=True)
     s.add_argument("--label", required=True)

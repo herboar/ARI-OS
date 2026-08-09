@@ -1,4 +1,5 @@
-import re, subprocess
+import argparse, re, subprocess
+import pytest
 from ari_os.tools import dispatch
 from ari_os.tools import state as _state
 
@@ -17,6 +18,35 @@ def test_build_argv_basic():
     assert "--model" in argv and "sonnet" in argv
     assert "--add-dir" in argv and "/work/extra" in argv
     assert "--dangerously-skip-permissions" in argv
+
+
+def test_build_argv_omits_effort_when_unset():
+    """No --effort means the worker keeps Claude Code's own default."""
+    argv = dispatch.build_claude_argv(
+        executor="sonnet", cwd="/p", add_dirs=[], read_only=False)
+    assert "--effort" not in argv
+
+
+def test_build_argv_passes_effort_when_set():
+    argv = dispatch.build_claude_argv(
+        executor="opus", cwd="/p", add_dirs=[], read_only=False,
+        effort="xhigh")
+    assert argv[argv.index("--effort") + 1] == "xhigh"
+
+
+def test_start_refuses_unknown_effort():
+    """`claude` only warns on a bad --effort and silently uses the default.
+
+    In a detached worker that warning lands in a log nobody reads, so the
+    operator would believe a job ran at the effort they named. Refuse instead.
+    """
+    a = argparse.Namespace(
+        executor="sonnet", effort="hihg", cwd="/p", label="x",
+        task_file="/dev/null", add_dir=None, read_only=False, purpose=None,
+        allow_main_tree=False)
+    with pytest.raises(SystemExit) as exc:
+        dispatch.cmd_start(a)
+    assert "hihg" in str(exc.value)
 
 
 def test_build_argv_read_only_strips_write_tools():
