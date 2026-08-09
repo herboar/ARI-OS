@@ -12,7 +12,7 @@ from __future__ import annotations
 import html as _html
 import json
 import os
-from http.server import BaseHTTPRequestHandler, HTTPServer
+from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from . import state as _state
 from .lane_assets import BOARD_CSS, BOARD_JS, MONITOR_JS
 from . import lane_render as _lane_render
@@ -178,7 +178,7 @@ class _Handler(BaseHTTPRequestHandler):
 
 
 def main() -> None:
-    srv = HTTPServer(("127.0.0.1", PORT), _Handler)
+    srv = ThreadingHTTPServer(("127.0.0.1", PORT), _Handler)
     print(f"Monitor live at http://localhost:{PORT}")
     try:
         srv.serve_forever()
