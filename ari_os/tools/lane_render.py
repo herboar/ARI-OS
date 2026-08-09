@@ -385,11 +385,16 @@ def _repo_section(repo: dict, mode: str, scale: int) -> str:
     lanes = "".join(_row(l, repo, mode, scale) for l in (repo.get("lanes") or []))
     if not lanes:
         lanes = '<div class="lb-hidden-note">no lanes discovered in this repo</div>'
-    return ('<section class="lb-repo" data-key="%s"><div class="lb-repo-head">'
+    # <details>, so each repo folds. Open by default; the fold layer in
+    # MONITOR_JS restores whatever Mati last chose from localStorage. The head
+    # is the summary, so lane/unmerged/uncommitted counts stay visible folded.
+    return ('<details class="lb-repo" open data-key="%s" data-lb-fold="repo:%s">'
+            '<summary class="lb-repo-head">'
             '<div class="lb-repo-name"><span class="lb-accent"></span>%s</div>'
-            '<span class="lb-figs">base %s</span>%s%s</div>'
-            '<div class="lb-lanes">%s</div><div class="lb-hidden-note"></div></section>'
-            % (_e(repo.get("key")), _e(repo.get("name")), _e(repo.get("base")), stats, sub, lanes))
+            '<span class="lb-figs">base %s</span>%s%s</summary>'
+            '<div class="lb-lanes">%s</div><div class="lb-hidden-note"></div></details>'
+            % (_e(repo.get("key")), _e(repo.get("key")), _e(repo.get("name")),
+               _e(repo.get("base")), stats, sub, lanes))
 
 
 # ---------------------------------------------------------------- chrome --

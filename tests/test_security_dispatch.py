@@ -40,12 +40,14 @@ def test_spawn_sends_task_on_stdin_and_private_log(tmp_path, monkeypatch):
     class FakeProcess:
         pid = 123
 
-        def __init__(self, argv, cwd, stdin, stdout, stderr, start_new_session):
+        def __init__(self, argv, cwd, stdin, stdout, stderr, env,
+                     start_new_session):
             captured["argv"] = argv
             captured["cwd"] = cwd
             captured["stdin_arg"] = stdin
             captured["stdout"] = stdout
             captured["stderr"] = stderr
+            captured["env"] = env
             captured["start_new_session"] = start_new_session
             self.stdin = FakeStdin()
             captured["stdin"] = self.stdin
@@ -58,6 +60,10 @@ def test_spawn_sends_task_on_stdin_and_private_log(tmp_path, monkeypatch):
     assert captured["stdin_arg"] is subprocess.PIPE
     assert captured["stdin"].bytes == b"secret prompt"
     assert captured["stdin"].closed is True
+    # The global git lane guard cannot see a dispatched worker without this:
+    # a worker is its own `claude -p` process, so hook payloads carry no
+    # agent_id and it would otherwise read as Mati's interactive session.
+    assert captured["env"]["ARI_OS_WORKER"] == "w-ab12-test"
     log = tmp_path / "logs" / "w-ab12-test.log"
     assert stat.S_IMODE(log.stat().st_mode) == 0o600
 

@@ -59,6 +59,18 @@ body{font-family:Chicago,'ChicagoFLF',system-ui,sans-serif;
 .s-blocked{background:#000;color:#fff;}
 .s-done{color:#555;}
 .q{border:2px solid #000;background:#fff;padding:8px;margin-top:8px;}
+/* The legacy chrome folds away; the Lane Board is why this page gets opened.
+   Nothing here restyles the folded content itself. */
+.window > .body > details > summary{list-style:none;cursor:pointer;
+  display:flex;justify-content:space-between;gap:12px;font-weight:bold;}
+.window > .body > details > summary::-webkit-details-marker{display:none;}
+.window > .body > details > summary > span:first-child::before{content:"\\25B8  ";}
+.window > .body > details[open] > summary > span:first-child::before{content:"\\25BE  ";}
+.window > .body > details > summary .tally{font-weight:normal;}
+/* A blocked worker is never hidden by a fold: this strip sits outside it. */
+.alert{border:2px solid #000;background:#000;color:#fff;padding:6px 8px;
+  margin-bottom:8px;font-weight:bold;}
+.alert:empty{display:none;}
 .picker{position:fixed;top:12px;right:12px;background:#fff;border:2px solid #000;
   box-shadow:2px 2px 0 #000;padding:4px 8px;font-size:12px;font-weight:bold;}
 .picker input{vertical-align:middle;margin-left:6px;}
@@ -113,6 +125,42 @@ def render_workers(state: dict) -> str:
     return "".join(rows) or '<div class="row"><span>no workers</span></div>'
 
 
+def _counts(state: dict) -> tuple[int, int, int]:
+    workers = state.get("workers", [])
+    running = sum(1 for w in workers if w.get("status") == "running")
+    blocked = sum(1 for w in workers if w.get("status") == "blocked")
+    return len(workers), running, blocked
+
+
+def render_worker_summary(state: dict) -> str:
+    """The one line that has to survive the fold: counts, blocked included."""
+    total, running, blocked = _counts(state)
+    qs = len(state.get("questions", []))
+    bits = [f"{running} running"]
+    if blocked:
+        bits.append(f"{blocked} BLOCKED")
+    if qs:
+        bits.append(f"{qs} question{'s' if qs != 1 else ''}")
+    if not total:
+        bits = ["no workers"]
+    return f'<span>Workers</span><span class="tally">{" &middot; ".join(bits)}</span>'
+
+
+def render_alert(state: dict) -> str:
+    """Rendered OUTSIDE the fold. Empty (and hidden) when nothing is stuck."""
+    _, _, blocked = _counts(state)
+    qs = state.get("questions", [])
+    if not blocked and not qs:
+        return ""
+    bits = []
+    if blocked:
+        bits.append(f"{blocked} worker(s) BLOCKED")
+    if qs:
+        names = ", ".join(_html.escape(q, quote=True) for q in qs)
+        bits.append(f"awaiting an answer: {names}")
+    return "&#x26A0; " + " &middot; ".join(bits)
+
+
 def render_questions(state: dict) -> str:
     qs = state.get("questions", [])
     if not qs:
@@ -133,9 +181,14 @@ def render_html(state: dict, theme: str | None = None) -> str:
             f"</head><body>"
             f"<div class='window'><div class='title-bar'>"
             f"<span class='name'>ARI-OS Monitor</span></div>"
-            f"<div class='body'><div id='lb-workers'>{render_workers(state)}</div>"
-            f"<div id='lb-questions'>{render_questions(state)}</div></div></div>"
-            f"<div id='lb-root'>{board}</div>{_PICKER}"
+            f"<div class='body'>"
+            f"<div class='alert' id='lb-alert'>{render_alert(state)}</div>"
+            f"<details data-lb-fold='legacy'>"
+            f"<summary id='lb-workers-summary'>{render_worker_summary(state)}</summary>"
+            f"<div id='lb-workers'>{render_workers(state)}</div>"
+            f"<div id='lb-questions'>{render_questions(state)}</div>"
+            f"{_PICKER}</details></div></div>"
+            f"<div id='lb-root'>{board}</div>"
             f"<script>{BOARD_JS}</script>"
             f"<script>{MONITOR_JS}</script></body></html>")
 
@@ -151,6 +204,8 @@ def state_payload(state: dict) -> dict:
         "board_html": _lane_render.render_board_fragment(snap),
         "workers_html": render_workers(state),
         "questions_html": render_questions(state),
+        "workers_summary_html": render_worker_summary(state),
+        "alert_html": render_alert(state),
     }
 
 

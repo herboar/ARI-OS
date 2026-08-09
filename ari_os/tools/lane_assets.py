@@ -81,6 +81,14 @@ html[data-lb-offline="1"] .lb-offline{display:flex;}
   margin-top:6px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
 .lb-hidden-note{padding:6px 10px;font-size:11.5px;color:var(--text3);}
 .lb-hidden-note:empty{display:none;}
+/* the repo head is a <summary>: kill the native marker, keep the flex row */
+summary.lb-repo-head{list-style:none;cursor:pointer;}
+summary.lb-repo-head::-webkit-details-marker{display:none;}
+summary.lb-repo-head:hover .lb-repo-name{color:var(--text);}
+.lb-repo:not([open])>summary.lb-repo-head{border-bottom:0;padding-bottom:2px;margin-bottom:0;}
+.lb-repo-name::before{content:"\\25B8";color:var(--text3);font-size:11px;
+  transition:transform .12s ease;display:inline-block;margin-right:2px;}
+.lb-repo[open]>summary .lb-repo-name::before{transform:rotate(90deg);}
 
 /* ---------- rows ---------- */
 .lb-row{border-top:1px solid var(--line);}
@@ -343,6 +351,29 @@ MONITOR_JS = """
     return out;
   }
   function put(id,html){var el=document.getElementById(id);if(el&&html!==undefined)el.innerHTML=html;}
+  // Fold state per region, keyed by data-lb-fold, in localStorage — the same
+  // way the view toggle and the hue picker persist. Survives the 5s swap and
+  // the refresh. A region with no stored entry keeps its server-rendered
+  // default (legacy chrome closed, repo sections open).
+  var FOLD='ariosFold';
+  function foldRead(){
+    try{var m=JSON.parse(localStorage.getItem(FOLD)||'{}');return m&&typeof m==='object'?m:{};}
+    catch(e){return {};}
+  }
+  function foldApply(){
+    var m=foldRead(),n=document.querySelectorAll('[data-lb-fold]'),i,k;
+    for(i=0;i<n.length;i++){
+      k=n[i].getAttribute('data-lb-fold');
+      if(k&&Object.prototype.hasOwnProperty.call(m,k))n[i].open=!!m[k];
+    }
+  }
+  // `toggle` does not bubble, so listen in the capture phase.
+  document.addEventListener('toggle',function(e){
+    var el=e.target,k=el&&el.getAttribute?el.getAttribute('data-lb-fold'):null;
+    if(!k)return;
+    var m=foldRead();m[k]=!!el.open;
+    try{localStorage.setItem(FOLD,JSON.stringify(m));}catch(err){}
+  },true);
   function poll(){
     fetch('/state.json',{cache:'no-store'}).then(function(r){
       if(!r.ok)throw new Error('http '+r.status);return r.json();
@@ -351,16 +382,20 @@ MONITOR_JS = """
       put('lb-root',d.board_html);
       put('lb-workers',d.workers_html);
       put('lb-questions',d.questions_html);
+      put('lb-workers-summary',d.workers_summary_html);
+      put('lb-alert',d.alert_html);
       n=document.querySelectorAll('#lb-root details');
       for(i=0;i<n.length;i++){
         if(open.indexOf(n[i].getAttribute('data-key'))>=0)n[i].open=true;
       }
+      foldApply();
       document.documentElement.removeAttribute('data-lb-offline');
       if(window.__lbApply)window.__lbApply();
     }).catch(function(){
       document.documentElement.setAttribute('data-lb-offline','1');
     });
   }
+  foldApply();
   setInterval(poll,INTERVAL);
 })();
 """
