@@ -168,15 +168,25 @@ summary.lb-repo-head:hover .lb-repo-name{color:var(--text);}
 .lb-none{font-size:11px;color:var(--text3);font-style:italic;}
 
 /* ---------- rail ----------
-   The spine is a CSS line, not part of each row's SVG, so it stays continuous
-   no matter how tall a row grows. Only the branch curve lives in the SVG. */
+   Hierarchical elbow draws its own MAIN spine + worktree column guides in SVG.
+   CSS spine only used for legacy nested style. */
 .lb-railcell{position:relative;width:96px;align-self:stretch;display:flex;align-items:center;}
-.lb-railcell::before{content:"";position:absolute;left:23px;top:0;bottom:0;width:2px;
+.lb-railcell.lb-rail-hierarchy{width:128px;min-width:128px;}
+.lb-railcell:not(.lb-rail-hierarchy)::before{content:"";position:absolute;left:23px;top:0;bottom:0;width:2px;
   background:var(--line);}
-.lb-lanes>.lb-row:first-child .lb-railcell::before{top:50%;}
+.lb-lanes>.lb-row:first-child .lb-railcell:not(.lb-rail-hierarchy)::before{top:50%;}
 .lb-rail{width:96px;height:64px;display:block;flex:none;position:relative;}
+.lb-railcell.lb-rail-hierarchy .lb-rail{width:128px;}
 .lb-rail .branch{fill:none;stroke-width:1.75;stroke-linecap:round;}
 .lb-rail .node{stroke-width:1.5;}
+/* MAIN / WORKTREE / A/B chips */
+.lb-hier{display:inline-block;margin-left:6px;font-family:var(--mono);font-size:9.5px;
+  font-weight:600;letter-spacing:.06em;padding:1px 6px;border-radius:4px;
+  border:1px solid var(--line);color:var(--text3);vertical-align:middle;}
+.lb-hier[data-h="main"]{color:var(--text2);}
+.lb-hier[data-h="wt"]{color:var(--blue);border-color:rgba(var(--bluew),.45);background:rgba(var(--bluew),.10);}
+.lb-hier[data-h="ab"]{color:var(--amber);border-color:rgba(var(--amberw),.45);background:rgba(var(--amberw),.10);}
+.lb-hier[data-h="dead"]{color:var(--text3);border-style:dashed;text-decoration:line-through;}
 
 /* ---------- expansion ---------- */
 .lb-body{padding:4px 12px 16px 20px;border-left:2px solid var(--line);margin-left:8px;}
@@ -253,8 +263,10 @@ summary.lb-repo-head:hover .lb-repo-name{color:var(--text);}
 .lb-view[data-v="dense"] .lb-row>summary{
   grid-template-columns:88px minmax(150px,1.15fr) 100px 78px 46px minmax(170px,1.25fr) 14px;}
 .lb-view[data-v="rail"] .lb-row>summary{
-  grid-template-columns:minmax(48px,160px) minmax(200px,1fr) auto auto auto 14px;padding:0 10px 0 0;gap:14px;
+  grid-template-columns:minmax(96px,140px) minmax(200px,1fr) auto auto auto 14px;padding:0 10px 0 0;gap:14px;
   min-height:64px;border-left:0;border-radius:9px;}
+.lb-view[data-v="rail"][data-rail-style="elbow"] .lb-row>summary{
+  grid-template-columns:128px minmax(200px,1fr) auto auto auto 14px;}
 .lb-view[data-v="rail"][data-rail-style="graph"] .lb-row>summary{
   grid-template-columns:48px minmax(200px,1fr) auto auto auto 14px;}
 .lb-view[data-v="rail"] .lb-row>summary .lb-actors{margin-top:3px;}
@@ -267,7 +279,8 @@ summary.lb-repo-head:hover .lb-repo-name{color:var(--text);}
   color:var(--text3);margin:0 0 8px;}
 .lb-minigraph{display:block;max-width:100%;height:auto;}
 /* Elbow spine is always at left:24 — keep continuous CSS spine */
-.lb-view[data-rail-style="elbow"] .lb-railcell::before{left:23px;}
+.lb-view[data-rail-style="elbow"] .lb-railcell:not(.lb-rail-hierarchy)::before{left:23px;}
+.lb-view[data-rail-style="elbow"] .lb-railcell.lb-rail-hierarchy::before{display:none;}
 .lb-view[data-rail-style="nested"] .lb-railcell::before{left:19px;}
 .lb-view[data-rail-style="graph"] .lb-railcell::before{display:none;}
 @media (max-width:820px){

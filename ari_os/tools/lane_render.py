@@ -277,49 +277,97 @@ def _rail_nested(lane: dict, scale: int) -> str:
 
 
 def _rail_elbow(lane: dict, scale: int) -> str:
-    """B · Single-spine + elbow — always off main spine; parent shown as badge."""
+    """Elbow as hierarchy (Mati mental model):
+
+    main  (vertical spine)
+      └── worktree  (elbow off main)          depth 1  · labeled WORKTREE
+            └── A/B variant (elbow off worktree column)  depth 2+ · labeled A/B
+
+    Multiple worktrees stack as siblings off main. Variants never leave main
+    directly — they leave their parent worktree column.
+    """
     m = _lane_metrics(lane, scale)
-    spine_x = 24
-    width = 96
+    # Columns: main=18, worktrees=54, A/B=96  (readable steps)
+    col = {0: 18, 1: 54, 2: 96}
+    depth = min(int(m["depth"] or 0), 2)
+    # parent column: main for worktrees; worktree col for A/B
+    parent_col = col[0] if depth <= 1 else col[1]
+    node_col = col.get(depth, 96)
+    width = 128
+
     if lane.get("kind") == "main":
-        return ('<div class="lb-railcell" data-style="elbow" data-depth="0">'
-                '<svg class="lb-rail" viewBox="0 0 %d 64" width="%d" height="64" role="img">'
-                '%s<circle class="node" cx="%d" cy="32" r="5.5" fill="var(--text2)" stroke="var(--bg)"/>'
-                '<text x="%d" y="35" font-size="9" fill="var(--text3)">main</text></svg></div>'
-                % (width, width, m["title"], spine_x, spine_x + 14))
-    # Pure fan-out from main spine — depth does NOT shift the curve
-    reach = 44 + min(m["behind"], m["scale"]) / float(m["scale"]) * 32
-    apex = reach
-    radius = m["radius"]
-    d = "M%d,6 C%d,20 %.1f,22 %.1f,32" % (spine_x, spine_x, apex - 12, apex)
-    if not m["dead"] and m["role"] != "variant" and m["merged_base"]:
-        d += " C%.1f,42 %d,46 %d,58" % (apex + 12, spine_x, spine_x)
-    elif not m["dead"] and m["role"] == "variant" and m["merged_parent"]:
-        # Hook back toward spine (parent lives on main line visually)
-        d += " C%.1f,42 %d,50 %d,58" % (apex + 6, spine_x + 8, spine_x)
+        return (
+            '<div class="lb-railcell lb-rail-hierarchy" data-style="elbow" data-depth="0">'
+            '<svg class="lb-rail" viewBox="0 0 %d 64" width="%d" height="64" role="img">'
+            '%s'
+            '<line x1="%d" y1="0" x2="%d" y2="64" stroke="var(--line)" stroke-width="2"/>'
+            '<circle class="node" cx="%d" cy="32" r="6" fill="var(--text2)" stroke="var(--bg)" stroke-width="1.5"/>'
+            '<text x="%d" y="36" font-size="9" font-weight="600" fill="var(--text3)">MAIN</text>'
+            '</svg></div>'
+            % (width, width, m["title"], col[0], col[0], col[0], col[0] + 12)
+        )
+
+    # Horizontal elbow: down parent column → right → node
+    # Start slightly above mid so consecutive worktrees read as siblings on main
+    d = ("M%d,0 L%d,20 L%d,20 L%d,32" % (parent_col, parent_col, node_col, node_col))
+    # Soft curve version for polish
+    d = ("M%d,4 L%d,18 Q%d,32 %d,32" % (parent_col, parent_col, parent_col + 8, node_col))
+
+    radius = 5 if depth == 1 else 4
+    if m["dead"]:
+        m = dict(m)
+        m["color"] = "var(--text3)"
+
     ring = ""
     if _uncommitted(m["git"]) and lane.get("kind") == "worktree":
-        ring = ('<circle cx="%.1f" cy="32" r="%.1f" fill="none" stroke="var(--red)" '
-                'stroke-width="1.25" opacity=".85"/>' % (apex, radius + 3.5))
-    dead_mark = ('<text x="%.1f" y="50" font-size="7" fill="var(--text3)" '
-                 'text-anchor="middle">DEAD</text>' % apex) if m["dead"] else ""
-    # Parent badge under node — the "decoration" that carries lineage in this style
-    parent = lane.get("parent_branch") or "main"
-    short = parent.split("/")[-1] if parent else "main"
-    if len(short) > 10:
-        short = short[:9] + "…"
-    badge = ('<text x="%.1f" y="46" font-size="7.5" fill="var(--text3)" '
-             'text-anchor="middle">←%s</text>' % (apex, _e(short)))
+        ring = (
+            '<circle cx="%d" cy="32" r="%d" fill="none" stroke="var(--red)" '
+            'stroke-width="1.25" opacity=".9"/>' % (node_col, radius + 3)
+        )
+
+    # Kind label under node — WORKTREE vs A/B (the missing signal)
     if m["dead"]:
-        badge = dead_mark
-    return ('<div class="lb-railcell" data-style="elbow" data-depth="%d" data-role="%s" data-route="%s">'
-            '<svg class="lb-rail" viewBox="0 0 %d 64" width="%d" height="64" role="img">'
-            '%s<circle cx="%d" cy="6" r="2" fill="var(--line)"/>'
-            '<path class="branch" d="%s" stroke="%s"%s/>'
-            '<circle class="node" cx="%.1f" cy="32" r="%.1f" fill="%s" stroke="var(--bg)"/>%s%s'
-            '</svg></div>'
-            % (m["depth"], _e(m["role"]), _e(m["route"]), width, width, m["title"],
-               spine_x, d, m["color"], m["dash"], apex, radius, m["color"], ring, badge))
+        kind_lbl = "DEAD"
+        kind_fill = "var(--text3)"
+    elif depth >= 2 or m["role"] == "variant":
+        kind_lbl = "A/B"
+        kind_fill = "var(--amber)"
+    else:
+        kind_lbl = "WORKTREE"
+        kind_fill = "var(--text3)"
+
+    kind_mark = (
+        '<text x="%d" y="48" font-size="8" font-weight="600" letter-spacing="0.04em" '
+        'fill="%s" text-anchor="middle">%s</text>' % (node_col, kind_fill, kind_lbl)
+    )
+
+    # Parent guide ticks: faint vertical at worktree column for A/B rows
+    guide = ""
+    if depth >= 2:
+        guide = (
+            '<line x1="%d" y1="0" x2="%d" y2="64" stroke="var(--line)" '
+            'stroke-width="1" stroke-dasharray="2 3" opacity=".55"/>' % (col[1], col[1])
+        )
+
+    return (
+        '<div class="lb-railcell lb-rail-hierarchy" data-style="elbow" data-depth="%d" '
+        'data-role="%s" data-route="%s" data-kind="%s">'
+        '<svg class="lb-rail" viewBox="0 0 %d 64" width="%d" height="64" role="img">'
+        '%s%s'
+        '<path class="branch" d="%s" stroke="%s" fill="none" stroke-width="1.85" '
+        'stroke-linecap="round" stroke-linejoin="round"%s/>'
+        '<circle class="node" cx="%d" cy="32" r="%d" fill="%s" stroke="var(--bg)" stroke-width="1.5"/>'
+        '%s%s'
+        '</svg></div>'
+        % (
+            depth, _e(m["role"]), _e(m["route"]),
+            "ab" if (depth >= 2 or m["role"] == "variant") else "worktree",
+            width, width, m["title"], guide,
+            d, m["color"], m["dash"],
+            node_col, radius, m["color"],
+            ring, kind_mark,
+        )
+    )
 
 
 def _rail_graph_dot(lane: dict, scale: int) -> str:
@@ -586,13 +634,29 @@ def _row(lane: dict, repo: dict, mode: str, scale: int, rail_style: str = "neste
     else:
         sub = '<div class="p none">%s &middot; no purpose recorded</div>' % _e(lane.get("branch"))
     sub += _parent_chip(lane)
-    kind_tag = '<span class="lb-kind">%s</span>' % _e(kind)
+    # Hierarchy labels (what Mati scans for): MAIN / WORKTREE / A/B
+    role = lane.get("role") or ""
+    route = lane.get("route_status") or ""
+    if kind == "main":
+        hier = "MAIN"
+        hier_cls = "main"
+    elif depth >= 2 or role == "variant":
+        hier = "DEAD" if route == "dead_route" else "A/B"
+        hier_cls = "dead" if route == "dead_route" else "ab"
+    else:
+        hier = "WORKTREE"
+        hier_cls = "wt"
+    kind_tag = (
+        '<span class="lb-kind">%s</span>'
+        '<span class="lb-hier" data-h="%s">%s</span>'
+        % (_e(kind), hier_cls, hier)
+    )
+    # Indent list text by depth for every rail style (multiple worktrees + A/B under them)
+    pad = max(0, depth) * (22 if rail_style == "elbow" else 14)
     namecell = ('<div class="lb-name" style="padding-left:%dpx"><div class="n">%s%s</div>%s</div>'
-                % (max(0, depth) * 14, _e(name), kind_tag, sub))
+                % (pad, _e(name), kind_tag, sub))
 
     if mode == "rail":
-        # Nested: indent the text so depth reads without relying only on SVG
-        pad = (depth * 18) if rail_style == "nested" else 0
         namecell = ('<div class="lb-name" style="padding-left:%dpx"><div class="n">%s%s</div>%s%s</div>'
                     % (pad, _e(name), kind_tag, sub, _actors(lane)))
         cells = [_rail_svg(lane, scale, rail_style), namecell, _figs(git), _pill(lane),
