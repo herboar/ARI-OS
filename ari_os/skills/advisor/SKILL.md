@@ -89,3 +89,13 @@ echo "long prompt" | /Users/mmarek/.ari-os/venv/bin/python -m ari_os.tools.ask -
 - Deeply coupled work where every step depends on the last — do it yourself.
 - Exploration/debugging before there's a plan — investigate first, dispatch after.
 - Already inside a subagent — don't nest.
+
+## Worktree lineage (Ari model)
+
+- Features branch from `main` (or the integration base).
+- **Variants and A/B tests branch from the parent feature tip**, not from main:
+  `git worktree add .claude/worktrees/<slug> -b agent/<slug> agent/<parent-slug>`.
+- Record parent at dispatch: `--from agent/<parent-slug> --role variant`.
+- Only one path merges to main; discard losers with `dispatch close --mode dead`.
+- Stay on the open feature worktree for the day (session stickiness).
+- Worktrees are for code changes, not pure data extraction.

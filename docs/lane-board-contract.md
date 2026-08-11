@@ -1,7 +1,8 @@
 # Lane Board — interface contract
 
-**Version:** 1 · 2026-08-08
-**Status:** FROZEN for the parallel build. Three lanes build against this simultaneously.
+**Version:** 2 · 2026-08-11
+**Status:** ACTIVE — additive lineage + night-pending.
+**v1 note:** Schema 1 fields remain valid; v2 adds lineage + cockpit extras. Three lanes build against this simultaneously.
 Do not change this file. If it is wrong, write a question file and stop — do not "fix" it locally,
 because two other workers are compiling against it.
 
@@ -237,3 +238,56 @@ import json; print(json.dumps(build_snapshot(), indent=1)[:4000])
 A frozen fixture is committed at `docs/lane-board-fixture.json` — load that. It is real captured
 state and is the contract made concrete. Your renderer must handle every field in it, including the
 `conflict: true` actor and the `unknown` liveness case.
+
+
+## Schema version 2 — lineage + night pending (additive)
+
+### Lane lineage fields
+
+```jsonc
+{
+  "parent_id": "xfactor:reel-covers" | null,  // null ⇒ parent is main spine
+  "parent_branch": "agent/reel-covers" | null,
+  "fork_point": { "sha": "abc1234", "age_s": 3600 } | null,
+  "depth": 0,                                  // main=0
+  "role": "main" | "feature" | "variant" | "review" | "unknown",
+  "route_status": "open" | "winner" | "dead_route" | "merged",
+  "integration": {
+    "target_branch": "main" | "agent/reel-covers",
+    "target_lane_id": "xfactor:main" | "xfactor:reel-covers" | null,
+    "ahead_of_parent": 3,
+    "behind_parent": 0,
+    "merged_into_parent": false
+  },
+  "lineage_source": "declared" | "inferred" | "none",
+  "lineage_confidence": "high" | "medium" | "low"
+}
+```
+
+**Parent resolution order:** (1) declared in workers.json / agent-lanes.json
+`parent`/`parent_branch`/`forked_from`; (2) git inference: among live lane tips, prefer
+P where `merge-base(C,P) == tip(P)` (C forked from P), deepest such P wins;
+(3) fallback parent = main (`parent_id: null`, depth 1). Always expose source + confidence.
+
+**Actions:** MERGE/RESCUE copyable commands for `role: variant` target the **parent**
+branch, not main. Only `role: feature` (or parent_id null) suggest merge to main.
+`route_status: dead_route` never offers merge-to-main.
+
+**Sorting:** default tree order is DFS by depth under main (features, then variants),
+with verdict severity as a secondary key within siblings. UI may still sort by verdict/age/name.
+
+### Snapshot cockpit extras
+
+```jsonc
+{
+  "schema": 2,
+  "night": {
+    "pending_session_digests": 4,   // cortex sources /night distill would chew
+    "recent_convs": 7,              // session transcripts touched in last 48h
+    "evidence": "4 sources ready for tier-0→1; 7 convs active in 48h"
+  }
+}
+```
+
+`night` is read-only inference from `~/.ari-os/brain.db` + `~/.claude/projects` transcript
+mtimes. Never blocks the snapshot; failures become `night: null` + `errors[]`.
