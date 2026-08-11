@@ -2,13 +2,13 @@
 
 Two switchable views over the same snapshot:
 
-* **Rail** — main is a vertical spine; features fork from main, variants fork
-  from their parent feature (nested indent). Dead routes are dashed and never
-  loop back to main. Drift is behind-parent; node size is ahead-of-parent.
+* **Rail** — three bake-off styles (toggle `rail`): **nested** (depth columns),
+  **elbow** (single main spine + parent badge), **graph** (mini DAG above list).
+  Dead routes are dashed and never loop back to main.
 * **Dense** — tree-indented rows with parent chips; divergence as a bar.
 
-Both views are always emitted; the container's `data-view` attribute decides
-which one is visible, so switching is a CSS flip — no refetch, no scroll loss.
+Views and rail styles are emitted/selectable via `data-view` / `data-rail` —
+CSS + localStorage flip, no refetch.
 
 Presentation rules that are not negotiable (see docs/lane-board-contract.md):
 every liveness dot renders with its evidence string, `conflict: true` renders
@@ -204,34 +204,15 @@ def _actors(lane: dict, full: bool = False) -> str:
             % "".join(_actor(a, full) for a in actors))
 
 
-def _rail_svg(lane: dict, scale: int) -> str:
-    """Nested branch curve: depth indents the origin; dead routes never rejoin main.
-
-    Main spine is CSS on `.lb-railcell`. Variants start from a parent column, not
-    always from main — Ari's linear/parent fork model made visual.
-    """
+def _lane_metrics(lane: dict, scale: int):
+    """Shared git/lineage metrics for every rail style."""
     git = lane.get("git") or {}
     integ = lane.get("integration") or {}
     verdict = lane.get("verdict") or "CLEAN"
     color = _VERDICT_COLOR.get(verdict, "var(--text3)")
-    title = "<title>%s</title>" % _e(lane.get("verdict_reason") or verdict)
     depth = int(lane.get("depth") or 0)
     route = lane.get("route_status") or "open"
     role = lane.get("role") or "unknown"
-    # Column geometry: main at x=20; each depth steps +16px
-    spine_x = 20
-    origin_x = spine_x + max(0, depth - 1) * 16
-    node_x = spine_x + depth * 16 + 28
-    width = max(96, int(node_x + 36))
-
-    if lane.get("kind") == "main":
-        return ('<div class="lb-railcell" data-depth="0">'
-                '<svg class="lb-rail" viewBox="0 0 %d 64" width="%d" height="64" '
-                'role="img">%s<circle class="node" cx="%d" cy="32" r="5.5" '
-                'fill="var(--text2)" stroke="var(--bg)"/>'
-                '<text x="%d" y="35" font-size="9" fill="var(--text3)">main</text>'
-                '</svg></div>' % (width, width, title, spine_x, spine_x + 14))
-
     behind = integ.get("behind_parent")
     ahead = integ.get("ahead_of_parent")
     if behind is None:
@@ -239,46 +220,220 @@ def _rail_svg(lane: dict, scale: int) -> str:
     if ahead is None:
         ahead = int(git.get("ahead") or 0)
     behind, ahead = int(behind or 0), int(ahead or 0)
-    # Horizontal reach encodes drift from parent
-    reach = min(behind, scale) / float(scale or 1) * 28
-    apex = node_x + reach
+    dead = route == "dead_route"
+    if dead:
+        color = "var(--text3)"
+    dash = ' stroke-dasharray="4 4"' if (dead or verdict == "PARKED") else ""
     radius = 3 + min(ahead, 25) / 25.0 * 5
     merged_parent = bool(integ.get("merged_into_parent"))
     merged_base = bool(git.get("merged_into_base"))
-    dead = route == "dead_route"
-    dash = ""
-    if dead or verdict == "PARKED":
-        dash = ' stroke-dasharray="4 4"'
-    if dead:
-        color = "var(--text3)"
+    title = "<title>%s</title>" % _e(lane.get("verdict_reason") or verdict)
+    return {
+        "git": git, "integ": integ, "verdict": verdict, "color": color,
+        "depth": depth, "route": route, "role": role, "behind": behind,
+        "ahead": ahead, "dead": dead, "dash": dash, "radius": radius,
+        "merged_parent": merged_parent, "merged_base": merged_base, "title": title,
+        "scale": scale or 1,
+    }
 
-    # Curve from parent column down to node
+
+def _rail_nested(lane: dict, scale: int) -> str:
+    """A · Nested Rail — depth columns; curve origin at parent column."""
+    m = _lane_metrics(lane, scale)
+    spine_x = 20
+    origin_x = spine_x + max(0, m["depth"] - 1) * 16
+    node_x = spine_x + m["depth"] * 16 + 28
+    width = max(96, int(node_x + 36))
+    if lane.get("kind") == "main":
+        return ('<div class="lb-railcell" data-style="nested" data-depth="0">'
+                '<svg class="lb-rail" viewBox="0 0 %d 64" width="%d" height="64" role="img">'
+                '%s<circle class="node" cx="%d" cy="32" r="5.5" fill="var(--text2)" stroke="var(--bg)"/>'
+                '<text x="%d" y="35" font-size="9" fill="var(--text3)">main</text></svg></div>'
+                % (width, width, m["title"], spine_x, spine_x + 14))
+    reach = min(m["behind"], m["scale"]) / float(m["scale"]) * 28
+    apex = node_x + reach
     d = "M%d,6 C%d,18 %.1f,22 %.1f,32" % (origin_x, origin_x, apex - 10, apex)
-    # Only feature lanes (depth 1, integrating to main) draw a merge-back to main spine
-    # Variants merge to parent — short inward hook, not full spine rejoin
-    if not dead:
-        if role != "variant" and merged_base:
+    if not m["dead"]:
+        if m["role"] != "variant" and m["merged_base"]:
             d += " C%.1f,42 %d,46 %d,58" % (apex + 10, spine_x, spine_x)
-        elif role == "variant" and merged_parent:
+        elif m["role"] == "variant" and m["merged_parent"]:
             d += " C%.1f,42 %d,46 %d,58" % (apex + 8, origin_x, origin_x)
-
     ring = ""
-    if _uncommitted(git) and lane.get("kind") == "worktree":
+    if _uncommitted(m["git"]) and lane.get("kind") == "worktree":
         ring = ('<circle cx="%.1f" cy="32" r="%.1f" fill="none" stroke="var(--red)" '
-                'stroke-width="1.25" opacity=".85"/>' % (apex, radius + 3.5))
-    dead_mark = ""
-    if dead:
-        dead_mark = ('<text x="%.1f" y="48" font-size="8" fill="var(--text3)" '
-                     'text-anchor="middle">DEAD</text>' % apex)
-
-    return ('<div class="lb-railcell" data-depth="%d" data-role="%s" data-route="%s">'
+                'stroke-width="1.25" opacity=".85"/>' % (apex, m["radius"] + 3.5))
+    dead_mark = ('<text x="%.1f" y="48" font-size="8" fill="var(--text3)" '
+                 'text-anchor="middle">DEAD</text>' % apex) if m["dead"] else ""
+    return ('<div class="lb-railcell" data-style="nested" data-depth="%d" data-role="%s" data-route="%s">'
             '<svg class="lb-rail" viewBox="0 0 %d 64" width="%d" height="64" role="img">'
             '%s<circle cx="%d" cy="6" r="2" fill="var(--line)"/>'
             '<path class="branch" d="%s" stroke="%s"%s/>'
             '<circle class="node" cx="%.1f" cy="32" r="%.1f" fill="%s" stroke="var(--bg)"/>%s%s'
             '</svg></div>'
-            % (depth, _e(role), _e(route), width, width, title, origin_x, d, color, dash,
-               apex, radius, color, ring, dead_mark))
+            % (m["depth"], _e(m["role"]), _e(m["route"]), width, width, m["title"],
+               origin_x, d, m["color"], m["dash"], apex, m["radius"], m["color"], ring, dead_mark))
+
+
+def _rail_elbow(lane: dict, scale: int) -> str:
+    """B · Single-spine + elbow — always off main spine; parent shown as badge."""
+    m = _lane_metrics(lane, scale)
+    spine_x = 24
+    width = 96
+    if lane.get("kind") == "main":
+        return ('<div class="lb-railcell" data-style="elbow" data-depth="0">'
+                '<svg class="lb-rail" viewBox="0 0 %d 64" width="%d" height="64" role="img">'
+                '%s<circle class="node" cx="%d" cy="32" r="5.5" fill="var(--text2)" stroke="var(--bg)"/>'
+                '<text x="%d" y="35" font-size="9" fill="var(--text3)">main</text></svg></div>'
+                % (width, width, m["title"], spine_x, spine_x + 14))
+    reach = 40 + min(m["behind"], m["scale"]) / float(m["scale"]) * 36
+    # Nested depth only nudges apex slightly so siblings stack readable
+    apex = reach + min(m["depth"], 3) * 6
+    radius = m["radius"]
+    d = "M%d,6 C%d,20 %.1f,22 %.1f,32" % (spine_x, spine_x, apex - 12, apex)
+    if not m["dead"] and m["role"] != "variant" and m["merged_base"]:
+        d += " C%.1f,42 %d,46 %d,58" % (apex + 12, spine_x, spine_x)
+    elif not m["dead"] and m["role"] == "variant" and m["merged_parent"]:
+        # Hook back toward spine (parent lives on main line visually)
+        d += " C%.1f,42 %d,50 %d,58" % (apex + 6, spine_x + 8, spine_x)
+    ring = ""
+    if _uncommitted(m["git"]) and lane.get("kind") == "worktree":
+        ring = ('<circle cx="%.1f" cy="32" r="%.1f" fill="none" stroke="var(--red)" '
+                'stroke-width="1.25" opacity=".85"/>' % (apex, radius + 3.5))
+    dead_mark = ('<text x="%.1f" y="50" font-size="7" fill="var(--text3)" '
+                 'text-anchor="middle">DEAD</text>' % apex) if m["dead"] else ""
+    # Parent badge under node — the "decoration" that carries lineage in this style
+    parent = lane.get("parent_branch") or "main"
+    short = parent.split("/")[-1] if parent else "main"
+    if len(short) > 10:
+        short = short[:9] + "…"
+    badge = ('<text x="%.1f" y="46" font-size="7.5" fill="var(--text3)" '
+             'text-anchor="middle">←%s</text>' % (apex, _e(short)))
+    if m["dead"]:
+        badge = dead_mark
+    return ('<div class="lb-railcell" data-style="elbow" data-depth="%d" data-role="%s" data-route="%s">'
+            '<svg class="lb-rail" viewBox="0 0 %d 64" width="%d" height="64" role="img">'
+            '%s<circle cx="%d" cy="6" r="2" fill="var(--line)"/>'
+            '<path class="branch" d="%s" stroke="%s"%s/>'
+            '<circle class="node" cx="%.1f" cy="32" r="%.1f" fill="%s" stroke="var(--bg)"/>%s%s'
+            '</svg></div>'
+            % (m["depth"], _e(m["role"]), _e(m["route"]), width, width, m["title"],
+               spine_x, d, m["color"], m["dash"], apex, radius, m["color"], ring, badge))
+
+
+def _rail_graph_dot(lane: dict, scale: int) -> str:
+    """C · row marker only — the real topology lives in the mini-graph above."""
+    m = _lane_metrics(lane, scale)
+    if lane.get("kind") == "main":
+        return ('<div class="lb-railcell" data-style="graph" data-depth="0">'
+                '<svg class="lb-rail" viewBox="0 0 48 64" width="48" height="64" role="img">'
+                '%s<circle class="node" cx="24" cy="32" r="5" fill="var(--text2)" stroke="var(--bg)"/>'
+                '</svg></div>' % m["title"])
+    opacity = ".45" if m["dead"] else "1"
+    ring = ""
+    if _uncommitted(m["git"]) and lane.get("kind") == "worktree":
+        ring = ('<circle cx="24" cy="32" r="%.1f" fill="none" stroke="var(--red)" '
+                'stroke-width="1.25"/>' % (m["radius"] + 3))
+    mark = ""
+    if m["dead"]:
+        mark = '<text x="24" y="48" font-size="7" fill="var(--text3)" text-anchor="middle">✕</text>'
+    return ('<div class="lb-railcell" data-style="graph" data-depth="%d" data-role="%s" data-route="%s" style="opacity:%s">'
+            '<svg class="lb-rail" viewBox="0 0 48 64" width="48" height="64" role="img">'
+            '%s<circle class="node" cx="24" cy="32" r="%.1f" fill="%s" stroke="var(--bg)"/>%s%s'
+            '</svg></div>'
+            % (m["depth"], _e(m["role"]), _e(m["route"]), opacity, m["title"],
+               m["radius"], m["color"], ring, mark))
+
+
+def _repo_mini_graph(repo: dict, scale: int) -> str:
+    """C · pure-SVG tree/DAG for one repo. No dagre — layout by depth + tree order."""
+    lanes = list(repo.get("lanes") or [])
+    if not lanes:
+        return ""
+    # Group by depth
+    by_depth = {}
+    for l in lanes:
+        d = 0 if l.get("kind") == "main" else int(l.get("depth") or 1)
+        by_depth.setdefault(d, []).append(l)
+    max_depth = max(by_depth) if by_depth else 0
+    col_w = 110
+    row_h = 28
+    max_rows = max(len(v) for v in by_depth.values()) if by_depth else 1
+    width = max(280, (max_depth + 1) * col_w + 40)
+    height = max(80, max_rows * row_h + 36)
+
+    # Assign positions: (id -> x,y)
+    pos = {}
+    for d, group in by_depth.items():
+        group = sorted(group, key=lambda l: (l.get("_tree_ord") if l.get("_tree_ord") is not None else 99,
+                                             l.get("name") or ""))
+        for i, l in enumerate(group):
+            x = 30 + d * col_w
+            y = 24 + i * row_h + (max_rows - len(group)) * row_h / 4
+            pos[l["id"]] = (x, y, l)
+
+    # Edges parent -> child
+    edges = []
+    for l in lanes:
+        if l.get("kind") == "main":
+            continue
+        pid = l.get("parent_id")
+        # parent_id null ⇒ main
+        if not pid:
+            main = next((x for x in lanes if x.get("kind") == "main"), None)
+            pid = main["id"] if main else None
+        if pid and pid in pos and l["id"] in pos:
+            edges.append((pid, l["id"], l))
+
+    parts = ['<svg class="lb-minigraph" viewBox="0 0 %d %d" width="100%%" height="%d" role="img" aria-label="lane lineage graph">'
+             % (width, height, height)]
+    parts.append('<title>%s lineage</title>' % _e(repo.get("name") or "repo"))
+    for src, dst, child in edges:
+        x1, y1, _ = pos[src]
+        x2, y2, _ = pos[dst]
+        dead = (child.get("route_status") == "dead_route")
+        color = "var(--text3)" if dead else _VERDICT_COLOR.get(child.get("verdict") or "CLEAN", "var(--text3)")
+        dash = ' stroke-dasharray="3 3"' if dead else ""
+        # cubic elbow
+        mx = (x1 + x2) / 2
+        parts.append('<path d="M%.1f,%.1f C%.1f,%.1f %.1f,%.1f %.1f,%.1f" fill="none" stroke="%s" '
+                     'stroke-width="1.5"%s opacity=".85"/>'
+                     % (x1 + 8, y1, mx, y1, mx, y2, x2 - 10, y2, color, dash))
+
+    for lid, (x, y, l) in pos.items():
+        verdict = l.get("verdict") or "CLEAN"
+        color = _VERDICT_COLOR.get(verdict, "var(--text3)")
+        dead = l.get("route_status") == "dead_route"
+        if l.get("kind") == "main":
+            color = "var(--text2)"
+        if dead:
+            color = "var(--text3)"
+        name = l.get("name") or "?"
+        if len(name) > 12:
+            name = name[:11] + "…"
+        r = 5.5 if l.get("kind") == "main" else 4.5
+        parts.append('<circle cx="%.1f" cy="%.1f" r="%.1f" fill="%s" stroke="var(--bg)" stroke-width="1.5">'
+                     '<title>%s — %s</title></circle>'
+                     % (x, y, r, color, _e(l.get("branch") or name), _e(verdict)))
+        if dead:
+            parts.append('<text x="%.1f" y="%.1f" font-size="8" fill="var(--text3)" text-anchor="middle">✕</text>'
+                         % (x, y + 3))
+        parts.append('<text x="%.1f" y="%.1f" font-size="10" fill="var(--text2)">%s</text>'
+                     % (x + 10, y + 3.5, _e(name)))
+
+    parts.append("</svg>")
+    return ('<div class="lb-minigraph-wrap" data-rail-only="graph">'
+            '<div class="lb-minigraph-label">lineage graph · click a row below for detail</div>'
+            '%s</div>' % "".join(parts))
+
+
+def _rail_svg(lane: dict, scale: int, rail_style: str = "nested") -> str:
+    """Dispatch to the active bake-off rail style."""
+    style = rail_style if rail_style in ("nested", "elbow", "graph") else "nested"
+    if style == "elbow":
+        return _rail_elbow(lane, scale)
+    if style == "graph":
+        return _rail_graph_dot(lane, scale)
+    return _rail_nested(lane, scale)
 
 
 # ------------------------------------------------------------- expansions --
@@ -401,7 +556,7 @@ def _parent_chip(lane: dict) -> str:
     return '<div class="lb-lineage-row">%s</div>' % "".join(bits)
 
 
-def _row(lane: dict, repo: dict, mode: str, scale: int) -> str:
+def _row(lane: dict, repo: dict, mode: str, scale: int, rail_style: str = "nested") -> str:
     git = lane.get("git") or {}
     head = lane.get("head") or {}
     verdict = lane.get("verdict") or "CLEAN"
@@ -436,7 +591,7 @@ def _row(lane: dict, repo: dict, mode: str, scale: int) -> str:
     if mode == "rail":
         namecell = ('<div class="lb-name"><div class="n">%s%s</div>%s%s</div>'
                     % (_e(name), kind_tag, sub, _actors(lane)))
-        cells = [_rail_svg(lane, scale), namecell, _figs(git), _pill(lane),
+        cells = [_rail_svg(lane, scale, rail_style), namecell, _figs(git), _pill(lane),
                  '<span class="lb-chev">&#8250;</span>']
     else:
         cells = [_pill(lane), namecell, _divergence(git, scale), _files(lane),
@@ -451,7 +606,7 @@ def _row(lane: dict, repo: dict, mode: str, scale: int) -> str:
             % (attrs, "".join(cells), ack, _lane_body(lane, repo)))
 
 
-def _repo_section(repo: dict, mode: str, scale: int) -> str:
+def _repo_section(repo: dict, mode: str, scale: int, rail_style: str = "nested") -> str:
     totals = repo.get("totals") or {}
     activity = repo.get("activity") or {}
     head = repo.get("head") or {}
@@ -465,7 +620,8 @@ def _repo_section(repo: dict, mode: str, scale: int) -> str:
     sub = ('<div class="lb-repo-sub">%s &middot; head %s %s &middot; %s ago</div>'
            % (_e(repo.get("path")), _e(head.get("sha")), _e(head.get("subject")),
               _e(_age(head.get("age_s")))))
-    lanes = "".join(_row(l, repo, mode, scale) for l in (repo.get("lanes") or []))
+    graph = _repo_mini_graph(repo, scale) if mode == "rail" else ""
+    lanes = "".join(_row(l, repo, mode, scale, rail_style) for l in (repo.get("lanes") or []))
     if not lanes:
         lanes = '<div class="lb-hidden-note">no lanes discovered in this repo</div>'
     # <details>, so each repo folds. Open by default; the fold layer in
@@ -475,15 +631,16 @@ def _repo_section(repo: dict, mode: str, scale: int) -> str:
             '<summary class="lb-repo-head">'
             '<div class="lb-repo-name"><span class="lb-accent"></span>%s</div>'
             '<span class="lb-figs">base %s</span>%s%s</summary>'
-            '<div class="lb-lanes">%s</div><div class="lb-hidden-note"></div></details>'
+            '%s<div class="lb-lanes">%s</div><div class="lb-hidden-note"></div></details>'
             % (_e(repo.get("key")), _e(repo.get("key")), _e(repo.get("name")),
-               _e(repo.get("base")), stats, sub, lanes))
+               _e(repo.get("base")), stats, sub, graph, lanes))
 
 
 # ---------------------------------------------------------------- chrome --
 
 _CONTROLS = [
     ("view", [("rail", "Rail"), ("dense", "Dense")]),
+    ("rail", [("nested", "Nested"), ("elbow", "Elbow"), ("graph", "Graph")]),
     ("density", [("comfortable", "Comfortable"), ("compact", "Compact")]),
     ("sort", [("tree", "Tree"), ("verdict", "Verdict"), ("age", "Age"), ("name", "Name")]),
     ("clean", [("show", "Show clean"), ("hide", "Hide clean")]),
@@ -548,7 +705,8 @@ def _footer(snap: dict) -> str:
             % "".join(rows))
 
 
-def render_board(snapshot: dict, view: str = "dense", standalone: bool = True) -> str:
+def render_board(snapshot: dict, view: str = "dense", standalone: bool = True,
+                 rail: str = "nested") -> str:
     """Render the board. `standalone` wraps it in a full previewable document.
 
     Both views are emitted every time; `view` only picks which one starts
@@ -557,18 +715,27 @@ def render_board(snapshot: dict, view: str = "dense", standalone: bool = True) -
     """
     snap = snapshot or {}
     view = view if view in ("rail", "dense") else "dense"
+    rail = rail if rail in ("nested", "elbow", "graph") else "nested"
     scale = _drift_scale(snap)
     age_s = _snapshot_age_s(snap)
     repos = snap.get("repos") or []
 
     views = []
-    for mode in ("rail", "dense"):
-        sections = "".join(_repo_section(r, mode, scale) for r in repos)
+    # Dense once; rail three ways so Nested/Elbow/Graph flip with zero refetch.
+    dense_sections = "".join(_repo_section(r, "dense", scale, "nested") for r in repos)
+    if not dense_sections:
+        dense_sections = ('<section class="lb-repo"><div class="lb-repo-head">'
+                          '<div class="lb-repo-name"><span class="lb-accent"></span>'
+                          'No repos in this snapshot</div></div></section>')
+    views.append('<div class="lb-view" data-v="dense">%s</div>' % dense_sections)
+    for style in ("nested", "elbow", "graph"):
+        sections = "".join(_repo_section(r, "rail", scale, style) for r in repos)
         if not sections:
             sections = ('<section class="lb-repo"><div class="lb-repo-head">'
                         '<div class="lb-repo-name"><span class="lb-accent"></span>'
                         'No repos in this snapshot</div></div></section>')
-        views.append('<div class="lb-view" data-v="%s">%s</div>' % (mode, sections))
+        views.append('<div class="lb-view" data-v="rail" data-rail-style="%s">%s</div>'
+                     % (style, sections))
 
     clock = ('<span class="lb-when" data-lb-clock>snapshot %s old</span>'
              % (_e(_age(age_s)) if age_s is not None else "age unknown"))
@@ -577,9 +744,11 @@ def render_board(snapshot: dict, view: str = "dense", standalone: bool = True) -
               '<span class="lb-when">%s &middot; %sms</span></h2>%s</div>'
               % (clock, generated, _e(snap.get("duration_ms")), _controls()))
 
-    board = ('<div class="lb" data-view="%s" data-density="comfortable" data-theme="dark" '
-             'data-clean="show" data-sort="tree" data-age-s="%s"%s>%s%s%s%s</div>'
-             % (view, _e("" if age_s is None else round(age_s, 1)),
+    rail_default = rail
+    board = ('<div class="lb" data-view="%s" data-rail="%s" data-density="comfortable" '
+             'data-theme="dark" data-clean="show" data-sort="tree" data-age-s="%s"%s>'
+             '%s%s%s%s</div>'
+             % (view, rail_default, _e("" if age_s is None else round(age_s, 1)),
                 ' data-pin="1"' if standalone else "",
                 header, _banners(snap, age_s), "".join(views), _footer(snap)))
 
