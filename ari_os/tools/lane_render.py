@@ -644,7 +644,7 @@ def _repo_section(repo: dict, mode: str, scale: int, rail_style: str = "nested")
 
 _CONTROLS = [
     ("view", [("rail", "Rail"), ("dense", "Dense")]),
-    ("rail", [("nested", "Nested"), ("elbow", "Elbow"), ("graph", "Graph")]),
+    ("rail", [("elbow", "Elbow"), ("nested", "Nested"), ("graph", "Graph")]),
     ("density", [("comfortable", "Comfortable"), ("compact", "Compact")]),
     ("sort", [("tree", "Tree"), ("verdict", "Verdict"), ("age", "Age"), ("name", "Name")]),
     ("clean", [("show", "Show clean"), ("hide", "Hide clean")]),
@@ -710,7 +710,7 @@ def _footer(snap: dict) -> str:
 
 
 def render_board(snapshot: dict, view: str = "dense", standalone: bool = True,
-                 rail: str = "nested") -> str:
+                 rail: str = "elbow") -> str:
     """Render the board. `standalone` wraps it in a full previewable document.
 
     Both views are emitted every time; `view` only picks which one starts
@@ -719,7 +719,7 @@ def render_board(snapshot: dict, view: str = "dense", standalone: bool = True,
     """
     snap = snapshot or {}
     view = view if view in ("rail", "dense") else "dense"
-    rail = rail if rail in ("nested", "elbow", "graph") else "nested"
+    rail = rail if rail in ("nested", "elbow", "graph") else "elbow"
     scale = _drift_scale(snap)
     age_s = _snapshot_age_s(snap)
     repos = snap.get("repos") or []
@@ -732,7 +732,7 @@ def render_board(snapshot: dict, view: str = "dense", standalone: bool = True,
                           '<div class="lb-repo-name"><span class="lb-accent"></span>'
                           'No repos in this snapshot</div></div></section>')
     views.append('<div class="lb-view" data-v="dense">%s</div>' % dense_sections)
-    for style in ("nested", "elbow", "graph"):
+    for style in ("elbow", "nested", "graph"):
         sections = "".join(_repo_section(r, "rail", scale, style) for r in repos)
         if not sections:
             sections = ('<section class="lb-repo"><div class="lb-repo-head">'

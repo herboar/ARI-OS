@@ -1,0 +1,77 @@
+{
+  "_doc": "Demo lanes for Ari linear model. Parents are real git forks.",
+  "lanes": [
+    {
+      "agent": "interactive",
+      "branch": "main",
+      "paths": ["*"],
+      "note": "Demo main tree",
+      "role": "main",
+      "started": "2026-08-11"
+    },
+    {
+      "agent": "broll-unit",
+      "branch": "agent/broll-unit",
+      "parent": "main",
+      "role": "feature",
+      "paths": ["broll-*"],
+      "note": "FEATURE · open b-roll unit — linear home for related work",
+      "started": "2026-08-11"
+    },
+    {
+      "agent": "broll-dp2",
+      "branch": "agent/broll-dp2",
+      "parent": "agent/broll-unit",
+      "role": "variant",
+      "paths": ["dp2-*"],
+      "note": "VARIANT of broll · GIF backgrounds — merge to broll, not main",
+      "started": "2026-08-11"
+    },
+    {
+      "agent": "broll-editor",
+      "branch": "agent/broll-editor",
+      "parent": "agent/broll-unit",
+      "role": "variant",
+      "paths": ["editor-*"],
+      "note": "VARIANT of broll · slide editor UX — merge to broll, not main",
+      "started": "2026-08-11"
+    },
+    {
+      "agent": "reel-covers",
+      "branch": "agent/reel-covers",
+      "parent": "main",
+      "role": "feature",
+      "paths": ["covers.md"],
+      "note": "FEATURE · reel covers product surface",
+      "started": "2026-08-11"
+    },
+    {
+      "agent": "covers-dark",
+      "branch": "agent/covers-dark",
+      "parent": "agent/reel-covers",
+      "role": "variant",
+      "paths": ["covers-dark*"],
+      "note": "A/B of reel-covers · dark plates — merge to reel-covers",
+      "started": "2026-08-11"
+    },
+    {
+      "agent": "covers-bigtype",
+      "branch": "agent/covers-bigtype",
+      "parent": "agent/reel-covers",
+      "role": "variant",
+      "route_status": "dead_route",
+      "paths": ["covers-big*"],
+      "note": "DEAD route · bigger type discarded — will not merge",
+      "started": "2026-08-11"
+    },
+    {
+      "agent": "script-parked",
+      "branch": "agent/script-parked",
+      "parent": "main",
+      "role": "feature",
+      "paths": ["script*"],
+      "note": "PARKED 2026-08-04 · independent of broll line",
+      "started": "2026-08-11"
+    }
+  ]
+}

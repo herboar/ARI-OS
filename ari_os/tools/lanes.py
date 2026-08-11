@@ -30,6 +30,11 @@ REPOS = [
      "path": "/Users/mmarek/Desktop/ClaudeCode_Projects/EA_Animarek", "base": "main"},
     {"key": "xfactor", "name": "X-Factor",
      "path": "/Users/mmarek/Desktop/ClaudeCode_Projects/EA-xfactor", "base": "main"},
+    # Real nested worktrees (Ari model) so rail styles can be judged on truth —
+    # not XF's all-main-forks layout. Demo only; no client code.
+    {"key": "lineage-demo", "name": "Lineage Demo (Ari shape)",
+     "path": "/Users/mmarek/Desktop/ClaudeCode_Projects/ARI-OS/fixtures/lineage-sandbox",
+     "base": "main"},
 ]
 
 GIT_TIMEOUT_S = 5.0        # rider 5: per-call ceiling

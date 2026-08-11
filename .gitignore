@@ -8,3 +8,6 @@ __pycache__/
 # transient multi-agent lane state
 .claude/agent-lanes.json
 .claude/worktrees/
+
+# Live demo worktrees (recreate with fixtures/recreate-lineage-sandbox.sh)
+fixtures/lineage-sandbox/

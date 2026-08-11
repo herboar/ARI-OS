@@ -285,7 +285,7 @@ summary.lb-repo-head:hover .lb-repo-name{color:var(--text);}
 BOARD_JS = """
 (function(){
   var K={view:'lbView',rail:'lbRail',density:'lbDensity',sort:'lbSort',clean:'lbClean',theme:'lbTheme'};
-  var D={view:'dense',rail:'nested',density:'comfortable',sort:'tree',clean:'show',theme:'dark'};
+  var D={view:'dense',rail:'elbow',density:'comfortable',sort:'tree',clean:'show',theme:'dark'};
   function get(k){try{var v=localStorage.getItem(K[k]);return v===null?D[k]:v}catch(e){return D[k]}}
   function set(k,v){try{localStorage.setItem(K[k],v)}catch(e){}}
   function each(sel,root,fn){
@@ -346,7 +346,7 @@ BOARD_JS = """
   }
   function applyRailViews(board){
     var view=board.getAttribute('data-view')||'dense';
-    var rail=board.getAttribute('data-rail')||'nested';
+    var rail=board.getAttribute('data-rail')||'elbow';
     each('.lb-view',board,function(v){
       var vv=v.getAttribute('data-v');
       var rs=v.getAttribute('data-rail-style');
@@ -360,7 +360,7 @@ BOARD_JS = """
         b.setAttribute('data-view',get('view'));
         b.setAttribute('data-rail',get('rail'));
       } else {
-        if(!b.getAttribute('data-rail'))b.setAttribute('data-rail',get('rail')||'nested');
+        if(!b.getAttribute('data-rail'))b.setAttribute('data-rail',get('rail')||'elbow');
         if(!b.getAttribute('data-view'))b.setAttribute('data-view',get('view')||'rail');
       }
       b.setAttribute('data-density',get('density'));
