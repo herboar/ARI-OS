@@ -1,5 +1,5 @@
 {
- "schema": 1,
+ "schema": 2,
  "generated_at": "2026-08-08T14:29:01.027394+00:00",
  "duration_ms": 112,
  "slept": false,
@@ -142,7 +142,23 @@
        "who": "Matias Marek",
        "what": "spec(lane-board): visual decision doc \u2014 six choices rendered as the board itself"
       }
-     ]
+     ],
+     "parent_id": null,
+     "parent_branch": null,
+     "fork_point": null,
+     "depth": 0,
+     "role": "main",
+     "route_status": "open",
+     "integration": {
+      "target_branch": "main",
+      "target_lane_id": "animarek:main",
+      "ahead_of_parent": 0,
+      "behind_parent": 0,
+      "merged_into_parent": true
+     },
+     "lineage_source": "none",
+     "lineage_confidence": "high",
+     "_tree_ord": 0
     }
    ]
   },
@@ -164,7 +180,7 @@
     "actors_24h": 1
    },
    "totals": {
-    "lanes": 6,
+    "lanes": 8,
     "unmerged_commits": 45,
     "uncommitted_files": 27
    },
@@ -255,7 +271,23 @@
        "who": "Matias Marek",
        "what": "pendings/slide-editor-lanes-qa-and-merge: drop task for Mati"
       }
-     ]
+     ],
+     "parent_id": null,
+     "parent_branch": null,
+     "fork_point": null,
+     "depth": 0,
+     "role": "main",
+     "route_status": "open",
+     "integration": {
+      "target_branch": "main",
+      "target_lane_id": "xfactor:main",
+      "ahead_of_parent": 0,
+      "behind_parent": 0,
+      "merged_into_parent": true
+     },
+     "lineage_source": "none",
+     "lineage_confidence": "high",
+     "_tree_ord": 0
     },
     {
      "id": "xfactor:broll-unit-01",
@@ -341,7 +373,26 @@
        "who": "Matias Marek",
        "what": "content/broll-unit-01: plan + assets for 2026-08-06 not-the-one-driving"
       }
-     ]
+     ],
+     "parent_id": null,
+     "parent_branch": "main",
+     "fork_point": {
+      "sha": "aaa1111",
+      "age_s": 86400
+     },
+     "depth": 1,
+     "role": "feature",
+     "route_status": "open",
+     "integration": {
+      "target_branch": "main",
+      "target_lane_id": "xfactor:main",
+      "ahead_of_parent": 6,
+      "behind_parent": 56,
+      "merged_into_parent": false
+     },
+     "lineage_source": "declared",
+     "lineage_confidence": "high",
+     "_tree_ord": 1
     },
     {
      "id": "xfactor:dp2-2b2",
@@ -438,7 +489,26 @@
        "who": "Matias Marek",
        "what": "slide_editor: video export verb (CDP frame stepping, ffmpeg assembly)"
       }
-     ]
+     ],
+     "parent_id": "xfactor:broll-unit-01",
+     "parent_branch": "agent/broll-unit-01",
+     "fork_point": {
+      "sha": "bbb2222",
+      "age_s": 3600
+     },
+     "depth": 2,
+     "role": "variant",
+     "route_status": "open",
+     "integration": {
+      "target_branch": "agent/broll-unit-01",
+      "target_lane_id": "xfactor:broll-unit-01",
+      "ahead_of_parent": 2,
+      "behind_parent": 0,
+      "merged_into_parent": false
+     },
+     "lineage_source": "declared",
+     "lineage_confidence": "high",
+     "_tree_ord": 2
     },
     {
      "id": "xfactor:editor-ux-batch",
@@ -535,7 +605,26 @@
        "who": "Matias Marek",
        "what": "slide_editor: seed-fit fix round 1 (CTA keeps authored positions, clamp coverage, stale boot comments)"
       }
-     ]
+     ],
+     "parent_id": null,
+     "parent_branch": "main",
+     "fork_point": {
+      "sha": "aaa1111",
+      "age_s": 86400
+     },
+     "depth": 1,
+     "role": "feature",
+     "route_status": "open",
+     "integration": {
+      "target_branch": "main",
+      "target_lane_id": "xfactor:main",
+      "ahead_of_parent": 20,
+      "behind_parent": 85,
+      "merged_into_parent": false
+     },
+     "lineage_source": "declared",
+     "lineage_confidence": "high",
+     "_tree_ord": 3
     },
     {
      "id": "xfactor:reel-covers",
@@ -623,7 +712,26 @@
        "who": "Matias Marek",
        "what": "lab/specs: D1/M2/M1 implementation plan (9 tasks, TDD, subagent-ready)"
       }
-     ]
+     ],
+     "parent_id": null,
+     "parent_branch": "main",
+     "fork_point": {
+      "sha": "aaa1111",
+      "age_s": 86400
+     },
+     "depth": 1,
+     "role": "feature",
+     "route_status": "open",
+     "integration": {
+      "target_branch": "main",
+      "target_lane_id": "xfactor:main",
+      "ahead_of_parent": 0,
+      "behind_parent": 144,
+      "merged_into_parent": true
+     },
+     "lineage_source": "declared",
+     "lineage_confidence": "high",
+     "_tree_ord": 4
     },
     {
      "id": "xfactor:script-issue01",
@@ -662,9 +770,247 @@
        "who": "Matias Marek",
        "what": "content/03-plan: DTC plan derived from newsletter issue #1 (SP12 card 4 pilot)"
       }
-     ]
+     ],
+     "parent_id": null,
+     "parent_branch": "main",
+     "fork_point": {
+      "sha": "aaa1111",
+      "age_s": 86400
+     },
+     "depth": 1,
+     "role": "feature",
+     "route_status": "open",
+     "integration": {
+      "target_branch": "main",
+      "target_lane_id": "xfactor:main",
+      "ahead_of_parent": 1,
+      "behind_parent": 68,
+      "merged_into_parent": false
+     },
+     "lineage_source": "declared",
+     "lineage_confidence": "high",
+     "_tree_ord": 5
+    },
+    {
+     "id": "xfactor:covers-dark",
+     "kind": "worktree",
+     "name": "covers-dark",
+     "purpose": "A/B dark mode reel covers",
+     "purpose_source": "dispatch",
+     "path": "/Users/mmarek/Desktop/ClaudeCode_Projects/EA-xfactor/.claude/worktrees/covers-dark",
+     "branch": "agent/covers-dark",
+     "head": {
+      "sha": "7b3fc907",
+      "subject": "web: snapshot in-flight dopamine-page work from the session scratchpad",
+      "when": "2026-08-01T04:30:15+00:00",
+      "age_s": 640726
+     },
+     "git": {
+      "ahead": 2,
+      "behind": 0,
+      "modified": 0,
+      "staged": 0,
+      "untracked": 0,
+      "merged_into_base": false
+     },
+     "verdict": "MERGE",
+     "verdict_reason": "finished variant, merge to parent feature",
+     "age_days": 7,
+     "size_bytes": null,
+     "actors": [],
+     "overlaps": [],
+     "overlap_files": [],
+     "history": [
+      {
+       "when": "2026-08-01T04:30:15+00:00",
+       "age": "7d ago",
+       "sha": "7b3fc907",
+       "who": "Matias Marek",
+       "what": "web: snapshot in-flight dopamine-page work from the session scratchpad"
+      },
+      {
+       "when": "2026-08-01T02:07:32+00:00",
+       "age": "7d ago",
+       "sha": "f75abcda",
+       "who": "Matias Marek",
+       "what": "web: persist the dopamine-experiment page (3 designs) + reel-cover format findings"
+      },
+      {
+       "when": "2026-07-31T06:35:32+00:00",
+       "age": "8d ago",
+       "sha": "4a255b95",
+       "who": "Matias Marek",
+       "what": "docs: capture both Reel cover layouts as reference"
+      },
+      {
+       "when": "2026-07-31T06:35:32+00:00",
+       "age": "8d ago",
+       "sha": "61d59b17",
+       "who": "Matias Marek",
+       "what": "covers: Reel cover decks for phone-drive (post 18) + survival-mode (post 20)"
+      },
+      {
+       "when": "2026-07-30T19:27:43+00:00",
+       "age": "8d ago",
+       "sha": "7760652e",
+       "who": "Matias Marek",
+       "what": "briefs: wave-2 autonomous build plan (Bucket A+C, D2, gates + safety model)"
+      },
+      {
+       "when": "2026-07-30T19:19:06+00:00",
+       "age": "8d ago",
+       "sha": "8ff5e6e6",
+       "who": "Matias Marek",
+       "what": "briefs: backlog status Phase-2 build 1 built + capture A7 recent-colors and D2 per-word typography (Mati 2026-07-30)"
+      },
+      {
+       "when": "2026-07-30T11:56:16+00:00",
+       "age": "9d ago",
+       "sha": "3c6be676",
+       "who": "Matias Marek",
+       "what": "lab/specs: annotate D1 spec 3.5 with as-built token-layer behavior (final-review follow-up)"
+      },
+      {
+       "when": "2026-07-30T00:52:39+00:00",
+       "age": "9d ago",
+       "sha": "0001375a",
+       "who": "Matias Marek",
+       "what": "lab/specs: D1/M2/M1 implementation plan (9 tasks, TDD, subagent-ready)"
+      }
+     ],
+     "parent_id": "xfactor:reel-covers",
+     "parent_branch": "agent/reel-covers",
+     "fork_point": {
+      "sha": "bbb2222",
+      "age_s": 3600
+     },
+     "depth": 2,
+     "role": "variant",
+     "route_status": "open",
+     "integration": {
+      "target_branch": "agent/reel-covers",
+      "target_lane_id": "xfactor:reel-covers",
+      "ahead_of_parent": 2,
+      "behind_parent": 0,
+      "merged_into_parent": false
+     },
+     "lineage_source": "declared",
+     "lineage_confidence": "high",
+     "_tree_ord": 6
+    },
+    {
+     "id": "xfactor:covers-bigtype",
+     "kind": "worktree",
+     "name": "covers-bigtype",
+     "purpose": "A/B bigger type \u2014 discarded",
+     "purpose_source": "dispatch",
+     "path": "/Users/mmarek/Desktop/ClaudeCode_Projects/EA-xfactor/.claude/worktrees/covers-bigtype",
+     "branch": "agent/covers-bigtype",
+     "head": {
+      "sha": "7b3fc907",
+      "subject": "web: snapshot in-flight dopamine-page work from the session scratchpad",
+      "when": "2026-08-01T04:30:15+00:00",
+      "age_s": 640726
+     },
+     "git": {
+      "ahead": 0,
+      "behind": 0,
+      "modified": 0,
+      "staged": 0,
+      "untracked": 0,
+      "merged_into_base": false
+     },
+     "verdict": "SWEEP",
+     "verdict_reason": "dead route \u2014 discarded variant",
+     "age_days": 7,
+     "size_bytes": null,
+     "actors": [],
+     "overlaps": [],
+     "overlap_files": [],
+     "history": [
+      {
+       "when": "2026-08-01T04:30:15+00:00",
+       "age": "7d ago",
+       "sha": "7b3fc907",
+       "who": "Matias Marek",
+       "what": "web: snapshot in-flight dopamine-page work from the session scratchpad"
+      },
+      {
+       "when": "2026-08-01T02:07:32+00:00",
+       "age": "7d ago",
+       "sha": "f75abcda",
+       "who": "Matias Marek",
+       "what": "web: persist the dopamine-experiment page (3 designs) + reel-cover format findings"
+      },
+      {
+       "when": "2026-07-31T06:35:32+00:00",
+       "age": "8d ago",
+       "sha": "4a255b95",
+       "who": "Matias Marek",
+       "what": "docs: capture both Reel cover layouts as reference"
+      },
+      {
+       "when": "2026-07-31T06:35:32+00:00",
+       "age": "8d ago",
+       "sha": "61d59b17",
+       "who": "Matias Marek",
+       "what": "covers: Reel cover decks for phone-drive (post 18) + survival-mode (post 20)"
+      },
+      {
+       "when": "2026-07-30T19:27:43+00:00",
+       "age": "8d ago",
+       "sha": "7760652e",
+       "who": "Matias Marek",
+       "what": "briefs: wave-2 autonomous build plan (Bucket A+C, D2, gates + safety model)"
+      },
+      {
+       "when": "2026-07-30T19:19:06+00:00",
+       "age": "8d ago",
+       "sha": "8ff5e6e6",
+       "who": "Matias Marek",
+       "what": "briefs: backlog status Phase-2 build 1 built + capture A7 recent-colors and D2 per-word typography (Mati 2026-07-30)"
+      },
+      {
+       "when": "2026-07-30T11:56:16+00:00",
+       "age": "9d ago",
+       "sha": "3c6be676",
+       "who": "Matias Marek",
+       "what": "lab/specs: annotate D1 spec 3.5 with as-built token-layer behavior (final-review follow-up)"
+      },
+      {
+       "when": "2026-07-30T00:52:39+00:00",
+       "age": "9d ago",
+       "sha": "0001375a",
+       "who": "Matias Marek",
+       "what": "lab/specs: D1/M2/M1 implementation plan (9 tasks, TDD, subagent-ready)"
+      }
+     ],
+     "parent_id": "xfactor:reel-covers",
+     "parent_branch": "agent/reel-covers",
+     "fork_point": {
+      "sha": "bbb2222",
+      "age_s": 3600
+     },
+     "depth": 2,
+     "role": "variant",
+     "route_status": "dead_route",
+     "integration": {
+      "target_branch": "agent/reel-covers",
+      "target_lane_id": "xfactor:reel-covers",
+      "ahead_of_parent": 2,
+      "behind_parent": 0,
+      "merged_into_parent": false
+     },
+     "lineage_source": "declared",
+     "lineage_confidence": "high",
+     "_tree_ord": 7
     }
    ]
   }
- ]
+ ],
+ "night": {
+  "pending_session_digests": 3,
+  "recent_convs": 5,
+  "evidence": "3 sources ready for tier-0\u21921 distill; 5 conv transcript(s) active in 48h"
+ }
 }

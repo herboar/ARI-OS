@@ -2,10 +2,10 @@
 
 Two switchable views over the same snapshot:
 
-* **Rail** — main is a vertical spine, each lane branches off it with an SVG
-  curve. Drift (`behind`) is the curve's reach, commit count (`ahead`) is the
-  node's size, so you see divergence before you read a number.
-* **Dense** — one tight row per lane, aligned columns, divergence as a bar.
+* **Rail** — main is a vertical spine; features fork from main, variants fork
+  from their parent feature (nested indent). Dead routes are dashed and never
+  loop back to main. Drift is behind-parent; node size is ahead-of-parent.
+* **Dense** — tree-indented rows with parent chips; divergence as a bar.
 
 Both views are always emitted; the container's `data-view` attribute decides
 which one is visible, so switching is a CSS flip — no refetch, no scroll loss.
@@ -205,44 +205,80 @@ def _actors(lane: dict, full: bool = False) -> str:
 
 
 def _rail_svg(lane: dict, scale: int) -> str:
-    """The branch curve off the spine. Merged lanes loop back into it.
+    """Nested branch curve: depth indents the origin; dead routes never rejoin main.
 
-    The spine itself is a CSS rule on `.lb-railcell`, so it runs unbroken
-    through rows of any height; only the branch is drawn here.
+    Main spine is CSS on `.lb-railcell`. Variants start from a parent column, not
+    always from main — Ari's linear/parent fork model made visual.
     """
     git = lane.get("git") or {}
+    integ = lane.get("integration") or {}
     verdict = lane.get("verdict") or "CLEAN"
     color = _VERDICT_COLOR.get(verdict, "var(--text3)")
     title = "<title>%s</title>" % _e(lane.get("verdict_reason") or verdict)
-    if lane.get("kind") == "main":
-        return ('<div class="lb-railcell">'
-                '<svg class="lb-rail" viewBox="0 0 96 64" width="96" height="64" '
-                'role="img">%s<circle class="node" cx="24" cy="32" r="5.5" '
-                'fill="var(--text2)" stroke="var(--bg)"/>'
-                '<text x="38" y="35" font-size="9" fill="var(--text3)">main</text>'
-                '</svg></div>' % title)
+    depth = int(lane.get("depth") or 0)
+    route = lane.get("route_status") or "open"
+    role = lane.get("role") or "unknown"
+    # Column geometry: main at x=20; each depth steps +16px
+    spine_x = 20
+    origin_x = spine_x + max(0, depth - 1) * 16
+    node_x = spine_x + depth * 16 + 28
+    width = max(96, int(node_x + 36))
 
-    behind, ahead = int(git.get("behind") or 0), int(git.get("ahead") or 0)
-    apex = 40 + min(behind, scale) / float(scale) * 44          # reach == drift
-    radius = 3 + min(ahead, 25) / 25.0 * 5                       # size == commits
-    merged = bool(git.get("merged_into_base"))
-    dash = ' stroke-dasharray="4 4"' if verdict == "PARKED" else ""
-    d = "M24,6 C24,18 %.1f,22 %.1f,32" % (apex - 14, apex)
-    if merged:
-        d += " C%.1f,42 24,46 24,58" % (apex + 14)
+    if lane.get("kind") == "main":
+        return ('<div class="lb-railcell" data-depth="0">'
+                '<svg class="lb-rail" viewBox="0 0 %d 64" width="%d" height="64" '
+                'role="img">%s<circle class="node" cx="%d" cy="32" r="5.5" '
+                'fill="var(--text2)" stroke="var(--bg)"/>'
+                '<text x="%d" y="35" font-size="9" fill="var(--text3)">main</text>'
+                '</svg></div>' % (width, width, title, spine_x, spine_x + 14))
+
+    behind = integ.get("behind_parent")
+    ahead = integ.get("ahead_of_parent")
+    if behind is None:
+        behind = int(git.get("behind") or 0)
+    if ahead is None:
+        ahead = int(git.get("ahead") or 0)
+    behind, ahead = int(behind or 0), int(ahead or 0)
+    # Horizontal reach encodes drift from parent
+    reach = min(behind, scale) / float(scale or 1) * 28
+    apex = node_x + reach
+    radius = 3 + min(ahead, 25) / 25.0 * 5
+    merged_parent = bool(integ.get("merged_into_parent"))
+    merged_base = bool(git.get("merged_into_base"))
+    dead = route == "dead_route"
+    dash = ""
+    if dead or verdict == "PARKED":
+        dash = ' stroke-dasharray="4 4"'
+    if dead:
+        color = "var(--text3)"
+
+    # Curve from parent column down to node
+    d = "M%d,6 C%d,18 %.1f,22 %.1f,32" % (origin_x, origin_x, apex - 10, apex)
+    # Only feature lanes (depth 1, integrating to main) draw a merge-back to main spine
+    # Variants merge to parent — short inward hook, not full spine rejoin
+    if not dead:
+        if role != "variant" and merged_base:
+            d += " C%.1f,42 %d,46 %d,58" % (apex + 10, spine_x, spine_x)
+        elif role == "variant" and merged_parent:
+            d += " C%.1f,42 %d,46 %d,58" % (apex + 8, origin_x, origin_x)
+
     ring = ""
     if _uncommitted(git) and lane.get("kind") == "worktree":
-        # The contradiction we must keep visible: a lane can be merged back into
-        # the spine and still be holding work git will never see.
         ring = ('<circle cx="%.1f" cy="32" r="%.1f" fill="none" stroke="var(--red)" '
                 'stroke-width="1.25" opacity=".85"/>' % (apex, radius + 3.5))
-    return ('<div class="lb-railcell">'
-            '<svg class="lb-rail" viewBox="0 0 96 64" width="96" height="64" role="img">'
-            '%s<circle cx="24" cy="6" r="2" fill="var(--line)"/>'
+    dead_mark = ""
+    if dead:
+        dead_mark = ('<text x="%.1f" y="48" font-size="8" fill="var(--text3)" '
+                     'text-anchor="middle">DEAD</text>' % apex)
+
+    return ('<div class="lb-railcell" data-depth="%d" data-role="%s" data-route="%s">'
+            '<svg class="lb-rail" viewBox="0 0 %d 64" width="%d" height="64" role="img">'
+            '%s<circle cx="%d" cy="6" r="2" fill="var(--line)"/>'
             '<path class="branch" d="%s" stroke="%s"%s/>'
-            '<circle class="node" cx="%.1f" cy="32" r="%.1f" fill="%s" stroke="var(--bg)"/>%s'
+            '<circle class="node" cx="%.1f" cy="32" r="%.1f" fill="%s" stroke="var(--bg)"/>%s%s'
             '</svg></div>'
-            % (title, d, color, dash, apex, radius, color, ring))
+            % (depth, _e(role), _e(route), width, width, title, origin_x, d, color, dash,
+               apex, radius, color, ring, dead_mark))
 
 
 # ------------------------------------------------------------- expansions --
@@ -260,11 +296,24 @@ def _commands(lane: dict, repo: dict) -> str:
                    % (_e(inspect), _e(inspect)))
         out.append('<div class="lb-manual">Read-only. Stage the files you want by exact path '
                    '&mdash; never a directory-level add.</div>')
-    if verdict in ("MERGE", "DIRTY") and branch:
-        merge = "git --no-optional-locks -C %s merge --no-ff %s" % (repo.get("path") or "", branch)
-        out.append('<div class="lb-cmd"><code>%s</code>'
+    if verdict in ("MERGE", "DIRTY") and branch and (lane.get("route_status") != "dead_route"):
+        integ = lane.get("integration") or {}
+        into = integ.get("target_branch") or repo.get("base") or "main"
+        # Merge into the correct parent (feature for variants; main for features)
+        merge = "git --no-optional-locks -C %s merge --no-ff %s" % (
+            # merge must run with target branch checked out — document via checkout+merge
+            repo.get("path") or "", branch)
+        # Prefer explicit: checkout target then merge branch
+        seq = ("git --no-optional-locks -C %s checkout %s && "
+               "git --no-optional-locks -C %s merge --no-ff %s" % (
+                   repo.get("path") or "", into, repo.get("path") or "", branch))
+        tip = "merge into %s (parent/integration target)" % into
+        out.append('<div class="lb-cmd"><span class="lb-cmd-tip">%s</span><code>%s</code>'
                    '<button type="button" data-lb-copy="%s">copy</button></div>'
-                   % (_e(merge), _e(merge)))
+                   % (_e(tip), _e(seq), _e(seq)))
+    if lane.get("route_status") == "dead_route":
+        out.append('<div class="lb-manual">Dead route — will not merge to main. '
+                   'Reclaim the worktree only when clean (no SWEEP command offered here).</div>')
     if verdict == "SWEEP":
         out.append('<div class="lb-manual">Safe to reclaim &mdash; <b>%s</b>. '
                    'No command is offered here on purpose: reclaiming a lane is destructive '
@@ -333,6 +382,25 @@ def _lane_body(lane: dict, repo: dict) -> str:
 
 # ------------------------------------------------------------------- rows --
 
+def _parent_chip(lane: dict) -> str:
+    if lane.get("kind") == "main":
+        return ""
+    route = lane.get("route_status") or "open"
+    role = lane.get("role") or ""
+    parent = lane.get("parent_branch") or "main"
+    bits = ['<span class="lb-parent" title="parent branch">← %s</span>' % _e(parent)]
+    if role and role not in ("feature", "main", "unknown"):
+        bits.append('<span class="lb-role" data-role="%s">%s</span>' % (_e(role), _e(role)))
+    if route == "dead_route":
+        bits.append('<span class="lb-dead">DEAD</span>')
+    conf = lane.get("lineage_confidence")
+    src = lane.get("lineage_source")
+    if src and src != "none":
+        bits.append('<span class="lb-lineage" title="lineage %s / %s">%s</span>'
+                    % (_e(src), _e(conf), _e(src)))
+    return '<div class="lb-lineage-row">%s</div>' % "".join(bits)
+
+
 def _row(lane: dict, repo: dict, mode: str, scale: int) -> str:
     git = lane.get("git") or {}
     head = lane.get("head") or {}
@@ -340,20 +408,30 @@ def _row(lane: dict, repo: dict, mode: str, scale: int) -> str:
     name = lane.get("name") or lane.get("branch") or "?"
     purpose = lane.get("purpose")
     kind = lane.get("kind") or "worktree"
+    depth = int(lane.get("depth") or 0)
+    tree_ord = lane.get("_tree_ord")
+    if tree_ord is None:
+        tree_ord = 0 if kind == "main" else 100
     age_s = head.get("age_s")
     if age_s is None:
         age_s = (lane.get("age_days") or 0) * 86400
+    alarm_id = "%s|%s|%s" % (lane.get("id"), verdict, lane.get("verdict_reason") or "")
     attrs = ('class="lb-row" data-verdict="%s" data-rank="%d" data-age="%s" data-name="%s" '
-             'data-first="%d" data-key="%s:%s"'
+             'data-first="%d" data-depth="%d" data-tree="%s" data-route="%s" '
+             'data-role="%s" data-alarm="%s" data-key="%s:%s"'
              % (_e(verdict), _VERDICT_RANK.get(verdict, 9), _e(age_s), _e(name),
-                1 if kind == "main" else 0, _e(mode), _e(lane.get("id") or name)))
+                1 if kind == "main" else 0, depth, _e(tree_ord),
+                _e(lane.get("route_status") or "open"),
+                _e(lane.get("role") or ""), _e(alarm_id),
+                _e(mode), _e(lane.get("id") or name)))
     if purpose:
         sub = '<div class="p">%s</div>' % _e(purpose)
     else:
         sub = '<div class="p none">%s &middot; no purpose recorded</div>' % _e(lane.get("branch"))
+    sub += _parent_chip(lane)
     kind_tag = '<span class="lb-kind">%s</span>' % _e(kind)
-    namecell = ('<div class="lb-name"><div class="n">%s%s</div>%s</div>'
-                % (_e(name), kind_tag, sub))
+    namecell = ('<div class="lb-name" style="padding-left:%dpx"><div class="n">%s%s</div>%s</div>'
+                % (max(0, depth) * 14, _e(name), kind_tag, sub))
 
     if mode == "rail":
         namecell = ('<div class="lb-name"><div class="n">%s%s</div>%s%s</div>'
@@ -364,8 +442,13 @@ def _row(lane: dict, repo: dict, mode: str, scale: int) -> str:
         cells = [_pill(lane), namecell, _divergence(git, scale), _files(lane),
                  '<span class="lb-age">%s</span>' % _e(_age(age_s)),
                  _actors(lane), '<span class="lb-chev">&#8250;</span>']
-    return ('<details %s><summary>%s</summary>%s</details>'
-            % (attrs, "".join(cells), _lane_body(lane, repo)))
+    # Alarm ack button for RESCUE/DIRTY/MERGE
+    ack = ""
+    if verdict in ("RESCUE", "DIRTY", "MERGE"):
+        ack = ('<button type="button" class="lb-ack" data-lb-ack="%s" '
+               'title="Acknowledge until the fact changes">ack</button>' % _e(alarm_id))
+    return ('<details %s><summary>%s%s</summary>%s</details>'
+            % (attrs, "".join(cells), ack, _lane_body(lane, repo)))
 
 
 def _repo_section(repo: dict, mode: str, scale: int) -> str:
@@ -402,7 +485,7 @@ def _repo_section(repo: dict, mode: str, scale: int) -> str:
 _CONTROLS = [
     ("view", [("rail", "Rail"), ("dense", "Dense")]),
     ("density", [("comfortable", "Comfortable"), ("compact", "Compact")]),
-    ("sort", [("verdict", "Verdict"), ("age", "Age"), ("name", "Name")]),
+    ("sort", [("tree", "Tree"), ("verdict", "Verdict"), ("age", "Age"), ("name", "Name")]),
     ("clean", [("show", "Show clean"), ("hide", "Hide clean")]),
     ("theme", [("dark", "Dark"), ("light", "Light")]),
 ]
@@ -421,6 +504,19 @@ def _controls() -> str:
 
 def _banners(snap: dict, age_s) -> str:
     out = []
+    night = snap.get("night") or {}
+    pd = night.get("pending_session_digests")
+    rc = night.get("recent_convs")
+    if pd is not None or rc is not None:
+        cls = "warn" if (pd or 0) > 0 else "info"
+        out.append(
+            '<div class="lb-banner %s" data-lb-night="1"><b>/NIGHT</b>'
+            '<span><b class="num">%s</b> session digest(s) pending · '
+            '<b class="num">%s</b> recent conv(s) '
+            '<span class="lb-ev">%s</span> — run <code>/night</code> to chew them.</span></div>'
+            % (cls, _e(pd if pd is not None else "?"),
+               _e(rc if rc is not None else "?"),
+               _e(night.get("evidence") or "")))
     if snap.get("_fixture"):
         out.append('<div class="lb-banner alarm"><b>SAMPLE DATA</b>'
                    '<span>This board is rendering a captured fixture, not live state. '
@@ -482,7 +578,7 @@ def render_board(snapshot: dict, view: str = "dense", standalone: bool = True) -
               % (clock, generated, _e(snap.get("duration_ms")), _controls()))
 
     board = ('<div class="lb" data-view="%s" data-density="comfortable" data-theme="dark" '
-             'data-clean="show" data-sort="verdict" data-age-s="%s"%s>%s%s%s%s</div>'
+             'data-clean="show" data-sort="tree" data-age-s="%s"%s>%s%s%s%s</div>'
              % (view, _e("" if age_s is None else round(age_s, 1)),
                 ' data-pin="1"' if standalone else "",
                 header, _banners(snap, age_s), "".join(views), _footer(snap)))

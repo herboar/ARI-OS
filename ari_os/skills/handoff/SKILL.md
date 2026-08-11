@@ -98,3 +98,13 @@ Log non-trivial decisions where the repo convention exists (`decisions/log.md`, 
 Every handoff MUST end with this line, verbatim:
 
 > FIRST TURN: read the referenced docs ONE AT A TIME (no parallel tool calls, no batched reads). Parallel reads on the first turn can wedge a new session; sequential reads avoid it.
+
+## Worktree lineage (Ari model)
+
+- Features branch from `main` (or the integration base).
+- **Variants and A/B tests branch from the parent feature tip**, not from main:
+  `git worktree add .claude/worktrees/<slug> -b agent/<slug> agent/<parent-slug>`.
+- Record parent at dispatch: `--from agent/<parent-slug> --role variant`.
+- Only one path merges to main; discard losers with `dispatch close --mode dead`.
+- Stay on the open feature worktree for the day (session stickiness).
+- Worktrees are for code changes, not pure data extraction.

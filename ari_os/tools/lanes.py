@@ -23,7 +23,7 @@ from pathlib import Path
 
 from . import state
 
-SCHEMA = 1
+SCHEMA = 2
 
 REPOS = [
     {"key": "animarek", "name": "Animarek",
@@ -64,6 +64,32 @@ class _Ctx:
 
     def error(self, scope: str, message: str) -> None:
         self.errors.append({"scope": scope, "message": message})
+
+
+
+def _git_rc(ctx: _Ctx, cwd, args: list, scope: str):
+    """Like _git but returns (rc, stdout) and does not log non-zero as errors.
+
+    Used for predicates like merge-base --is-ancestor where rc=1 is a normal answer.
+    """
+    if time.monotonic() > ctx.deadline:
+        return 124, ""
+    argv = ["git", "--no-optional-locks", "-C", str(cwd)] + args
+    try:
+        p = subprocess.Popen(argv, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    except OSError:
+        return 127, ""
+    try:
+        out, _err = p.communicate(timeout=GIT_TIMEOUT_S)
+    except subprocess.TimeoutExpired:
+        p.terminate()
+        try:
+            p.communicate(timeout=2)
+        except subprocess.TimeoutExpired:
+            p.kill()
+            p.communicate()
+        return 124, ""
+    return p.returncode, out.decode("utf-8", "replace")
 
 
 def _git(ctx: _Ctx, cwd, args: list, scope: str):
@@ -218,6 +244,334 @@ def _ahead_behind(ctx: _Ctx, repo_path: str, base: str, branch: str, scope: str)
         return None, None
 
 
+# ---------------------------------------------------------------- lineage (schema 2)
+
+def _rev_parse(ctx: _Ctx, repo_path: str, rev: str, scope: str):
+    out = _git(ctx, repo_path, ["rev-parse", rev], scope)
+    return (out or "").strip() or None
+
+
+def _merge_base_sha(ctx: _Ctx, repo_path: str, a: str, b: str, scope: str):
+    out = _git(ctx, repo_path, ["merge-base", a, b], scope)
+    return (out or "").strip() or None
+
+
+def _is_ancestor(ctx: _Ctx, repo_path: str, anc: str, desc: str, scope: str) -> bool:
+    """True when anc is an ancestor of desc (or equal). rc=1 is a normal 'no'."""
+    if not anc or not desc:
+        return False
+    rc, _ = _git_rc(ctx, repo_path, ["merge-base", "--is-ancestor", anc, desc], scope)
+    return rc == 0
+
+
+def _worker_declared_lineage() -> dict:
+    """branch -> {parent, role, route_status} from live workers.json rows."""
+    out = {}
+    try:
+        with state.locked():
+            workers = state.read_workers()
+    except Exception:
+        return out
+    for w in workers or []:
+        if not isinstance(w, dict):
+            continue
+        br = w.get("branch")
+        if not br:
+            continue
+        parent = w.get("parent_branch") or w.get("parent") or w.get("forked_from")
+        role = w.get("role")
+        route = w.get("route_status")
+        if parent or role or route:
+            out[br] = {"parent": parent, "role": role, "route_status": route}
+    return out
+
+
+def _infer_parent(ctx, repo, lane, candidates, tips: dict) -> tuple:
+    """Return (parent_lane_or_None, source, confidence).
+
+    Strict rule (Ari model): parent P is only non-main when tip(P) is a proper
+    ancestor of tip(C) — C was forked from P and still contains P's tip. Among
+    such parents, pick the closest (fewest commits P..C). Never invent a parent
+    from mere shared history; that falsely chains sibling features.
+    """
+    scope = "lineage:%s:%s" % (repo["key"], lane.get("name"))
+    child_br = lane.get("branch")
+    child_tip = tips.get(lane["id"])
+    if not child_br or not child_tip or lane.get("kind") == "main":
+        return None, "none", "high"
+
+    non_main = []
+    main_lane = None
+    for cand in candidates:
+        if cand["id"] == lane["id"]:
+            continue
+        p_tip = tips.get(cand["id"])
+        p_br = cand.get("branch")
+        if not p_tip or not p_br:
+            continue
+        if cand.get("kind") == "main":
+            main_lane = cand
+            continue
+        # Proper ancestor only: tip(P) ∈ history(C), tip(C) ∉ history(P)
+        if not _is_ancestor(ctx, repo["path"], p_tip, child_tip, scope):
+            continue
+        if _is_ancestor(ctx, repo["path"], child_tip, p_tip, scope):
+            continue
+        ab = _ahead_behind(ctx, repo["path"], p_br, child_br, scope)
+        ahead = ab[0] if ab and ab[0] is not None else None
+        if ahead is None or ahead < 1:
+            continue
+        non_main.append((ahead, cand))
+
+    if non_main:
+        non_main.sort(key=lambda x: x[0])
+        return non_main[0][1], "inferred", "high"
+
+    if main_lane is not None:
+        return main_lane, "inferred", "medium"
+    return None, "none", "low"
+
+
+def _apply_lineage(ctx: _Ctx, repo: dict, lanes: list, meta: dict) -> None:
+    """Mutate lanes in place with schema-2 lineage fields + tree order metadata."""
+    base = repo["base"]
+    declared_w = _worker_declared_lineage()
+    by_branch = {l.get("branch"): l for l in lanes if l.get("branch")}
+    by_name = {l.get("name"): l for l in lanes}
+
+    # Resolve tips once
+    tips = {}
+    for lane in lanes:
+        scope = "lineage:%s:%s" % (repo["key"], lane.get("name"))
+        rev = lane.get("branch") or "HEAD"
+        tips[lane["id"]] = _rev_parse(ctx, repo["path"], rev, scope)
+
+    for lane in lanes:
+        branch = lane.get("branch")
+        m = meta.get(branch) or {}
+        wdecl = declared_w.get(branch) or {}
+
+        # Defaults for main
+        if lane.get("kind") == "main":
+            lane["parent_id"] = None
+            lane["parent_branch"] = None
+            lane["fork_point"] = None
+            lane["depth"] = 0
+            lane["role"] = "main"
+            lane["route_status"] = "open"
+            lane["integration"] = {
+                "target_branch": base,
+                "target_lane_id": lane["id"],
+                "ahead_of_parent": 0,
+                "behind_parent": 0,
+                "merged_into_parent": True,
+            }
+            lane["lineage_source"] = "none"
+            lane["lineage_confidence"] = "high"
+            continue
+
+        parent_br = wdecl.get("parent") or m.get("parent")
+        source = "declared" if parent_br else None
+        confidence = "high" if parent_br else None
+        parent_lane = None
+        if parent_br:
+            parent_lane = by_branch.get(parent_br) or by_name.get(parent_br)
+            if parent_lane is None and parent_br in (base, "main"):
+                parent_lane = next((l for l in lanes if l.get("kind") == "main"), None)
+
+        if parent_lane is None:
+            parent_lane, source, confidence = _infer_parent(ctx, repo, lane, lanes, tips)
+
+        role = wdecl.get("role") or m.get("role")
+        route = wdecl.get("route_status") or m.get("route_status") or "open"
+        if not role:
+            if parent_lane and parent_lane.get("kind") != "main":
+                role = "variant"
+            else:
+                role = "feature"
+        if lane.get("git", {}).get("merged_into_base") and route == "open":
+            route = "merged"
+
+        parent_id = parent_lane["id"] if parent_lane else None
+        parent_branch = (parent_lane.get("branch") if parent_lane
+                         else (parent_br or base))
+        # depth filled in second pass
+        lane["parent_id"] = parent_id if parent_lane and parent_lane.get("kind") != "main" else (
+            None if (not parent_lane or parent_lane.get("kind") == "main") else parent_id)
+        # Normalize: parent_id null means main spine
+        if parent_lane and parent_lane.get("kind") == "main":
+            lane["parent_id"] = None
+        elif parent_lane:
+            lane["parent_id"] = parent_lane["id"]
+        else:
+            lane["parent_id"] = None
+
+        lane["parent_branch"] = parent_branch
+        lane["role"] = role
+        lane["route_status"] = route
+        lane["lineage_source"] = source or "none"
+        lane["lineage_confidence"] = confidence or "low"
+
+        # Integration metrics vs parent
+        p_ref = parent_branch or base
+        scope = "lineage:%s:%s" % (repo["key"], lane.get("name"))
+        ahead_p, behind_p = _ahead_behind(ctx, repo["path"], p_ref, branch, scope)
+        merged_p = None if ahead_p is None else ahead_p == 0
+        target_lane_id = None
+        if parent_lane:
+            target_lane_id = parent_lane["id"]
+        else:
+            main_l = next((l for l in lanes if l.get("kind") == "main"), None)
+            target_lane_id = main_l["id"] if main_l else None
+
+        # Variants integrate to parent; features to main/base
+        if role == "variant" and parent_lane and parent_lane.get("kind") != "main":
+            target_branch = parent_lane.get("branch") or p_ref
+        else:
+            target_branch = base
+            main_l = next((l for l in lanes if l.get("kind") == "main"), None)
+            target_lane_id = main_l["id"] if main_l else target_lane_id
+
+        lane["integration"] = {
+            "target_branch": target_branch,
+            "target_lane_id": target_lane_id,
+            "ahead_of_parent": ahead_p,
+            "behind_parent": behind_p,
+            "merged_into_parent": merged_p,
+        }
+
+        mb = _merge_base_sha(ctx, repo["path"], p_ref, branch, scope)
+        fork_age = None
+        if mb:
+            # age of fork point commit
+            out = _git(ctx, repo["path"],
+                       ["log", "-1", "--format=%cI", mb], scope)
+            when = _utc((out or "").strip()) if out else None
+            if when:
+                fork_age = _age_of(when, datetime.now(timezone.utc))
+        lane["fork_point"] = {"sha": (mb or "")[:12] or None, "age_s": fork_age} if mb else None
+
+    # Depth pass
+    by_id = {l["id"]: l for l in lanes}
+    def depth_of(lane, seen=None):
+        seen = seen or set()
+        if lane["id"] in seen:
+            return 1
+        seen.add(lane["id"])
+        if lane.get("kind") == "main" or not lane.get("parent_id"):
+            return 0 if lane.get("kind") == "main" else 1
+        parent = by_id.get(lane["parent_id"])
+        if not parent:
+            return 1
+        return depth_of(parent, seen) + 1
+
+    for lane in lanes:
+        lane["depth"] = depth_of(lane)
+
+    # Tree sort key for later UI: DFS order
+    children = {}
+    for lane in lanes:
+        if lane.get("kind") == "main":
+            continue
+        key = lane.get("parent_id") or "__main__"
+        children.setdefault(key, []).append(lane)
+    for kids in children.values():
+        kids.sort(key=lambda l: (
+            {"RESCUE": 0, "DIRTY": 1, "MERGE": 2, "PARKED": 3, "SWEEP": 4, "CLEAN": 5}.get(l.get("verdict"), 9),
+            l.get("name") or ""))
+
+    ordered = []
+    main_l = next((l for l in lanes if l.get("kind") == "main"), None)
+    if main_l:
+        ordered.append(main_l)
+    def walk(pid):
+        for ch in children.get(pid, []):
+            ordered.append(ch)
+            walk(ch["id"])
+    walk("__main__")
+    # any orphans not reached
+    seen = {l["id"] for l in ordered}
+    for lane in lanes:
+        if lane["id"] not in seen:
+            ordered.append(lane)
+    for i, lane in enumerate(ordered):
+        lane["_tree_ord"] = i
+    # Role cleanup: depth-1 off main is a feature, not a variant
+    for lane in ordered:
+        if lane.get("kind") == "main":
+            continue
+        if not lane.get("parent_id"):
+            if lane.get("role") == "variant":
+                lane["role"] = "feature"
+            # integration target for features is always base
+            integ = lane.setdefault("integration", {})
+            integ["target_branch"] = base
+            main_l = next((l for l in ordered if l.get("kind") == "main"), None)
+            if main_l:
+                integ["target_lane_id"] = main_l["id"]
+    lanes[:] = ordered
+
+
+def _night_pending(ctx: _Ctx) -> dict | None:
+    """Cockpit signal: how much /night still has to digest.
+
+    pending_session_digests — cortex tier-0 sources ready for distill (cold, no tier-1)
+    recent_convs — Claude Code session transcripts touched in the last 48h
+    """
+    pending = 0
+    recent = 0
+    try:
+        db_path = Path.home() / ".ari-os" / "brain.db"
+        if db_path.is_file():
+            import sqlite3
+            con = sqlite3.connect(str(db_path))
+            try:
+                # sources with enough cold tier-0 chunks and no tier-1 child
+                rows = con.execute(
+                    """
+                    SELECT c.source_id, COUNT(*) AS n
+                      FROM chunk c
+                     WHERE c.distillation_tier = 0
+                       AND (c.last_retrieved_at IS NULL
+                            OR c.last_retrieved_at < strftime('%s','now') - 86400)
+                       AND c.source_id NOT IN (
+                            SELECT DISTINCT source_id FROM chunk
+                             WHERE distillation_tier = 1)
+                     GROUP BY c.source_id
+                    HAVING n >= 2
+                    """
+                ).fetchall()
+                pending = len(rows)
+            finally:
+                con.close()
+    except Exception as exc:
+        ctx.error("night", "brain.db night pending failed: %r" % exc)
+
+    try:
+        projects = Path.home() / ".claude" / "projects"
+        cutoff = time.time() - 48 * 3600
+        if projects.is_dir():
+            for f in projects.glob("*/*.jsonl"):
+                # skip subagent trees for "conv" count — top-level sessions only
+                try:
+                    st = f.stat()
+                except OSError:
+                    continue
+                if st.st_mtime >= cutoff and st.st_size >= 2048:
+                    recent += 1
+    except Exception as exc:
+        ctx.error("night", "recent conv scan failed: %r" % exc)
+
+    evidence = "%d source(s) ready for tier-0→1 distill; %d conv transcript(s) active in 48h" % (
+        pending, recent)
+    return {
+        "pending_session_digests": pending,
+        "recent_convs": recent,
+        "evidence": evidence,
+    }
+
+
+
 def _worktrees(ctx: _Ctx, repo: dict) -> list:
     out = _git(ctx, repo["path"], ["worktree", "list", "--porcelain"], "repo:" + repo["key"])
     if out is None:
@@ -244,8 +598,8 @@ def _worktrees(ctx: _Ctx, repo: dict) -> list:
 
 # ---------------------------------------------------------------- purpose
 
-def _lane_file_purposes(repo_path: str) -> dict:
-    """branch -> (purpose, raw note) from .claude/agent-lanes.json, if present."""
+def _lane_file_meta(repo_path: str) -> dict:
+    """branch -> {purpose, raw, parent, role, route_status} from agent-lanes.json."""
     p = Path(repo_path) / ".claude" / "agent-lanes.json"
     try:
         data = json.loads(p.read_text())
@@ -259,9 +613,20 @@ def _lane_file_purposes(repo_path: str) -> dict:
         if not isinstance(row, dict) or not row.get("branch"):
             continue
         raw = row.get("purpose") or row.get("note") or ""
-        if raw:
-            out[row["branch"]] = (_trim_purpose(raw), raw)
+        out[row["branch"]] = {
+            "purpose": _trim_purpose(raw) if raw else None,
+            "raw": raw or "",
+            "parent": row.get("parent") or row.get("parent_branch") or row.get("forked_from"),
+            "role": row.get("role"),
+            "route_status": row.get("route_status"),
+        }
     return out
+
+
+def _lane_file_purposes(repo_path: str) -> dict:
+    """branch -> (purpose, raw note) — compatibility wrapper."""
+    meta = _lane_file_meta(repo_path)
+    return {b: (m["purpose"], m["raw"]) for b, m in meta.items() if m.get("purpose")}
 
 
 def _trim_purpose(raw: str) -> str:
@@ -551,11 +916,13 @@ def build_snapshot() -> dict:
                 if not wts:
                     ctx.error("repo:" + repo["key"], "not a git repo (or worktree list failed)")
                     continue
-                purposes = _lane_file_purposes(repo["path"])
-                meta = pool.submit(_repo_head_activity, ctx, repo, now)
+                lane_meta = _lane_file_meta(repo["path"])
+                purposes = {b: (m["purpose"], m["raw"]) for b, m in lane_meta.items()
+                            if m.get("purpose")}
+                head_fut = pool.submit(_repo_head_activity, ctx, repo, now)
                 jobs = [(wt, _lane_jobs(pool, ctx, repo, wt, now)) for wt in wts]
-                plans.append((repo, purposes, meta, jobs))
-            for repo, purposes, meta, jobs in plans:
+                plans.append((repo, purposes, lane_meta, head_fut, jobs))
+            for repo, purposes, lane_meta, head_fut, jobs in plans:
                 lanes = []
                 for wt, job in jobs:
                     try:
@@ -563,11 +930,15 @@ def build_snapshot() -> dict:
                     except Exception as exc:              # never raise out of here
                         ctx.error("repo:" + repo["key"], "lane build failed: %r" % exc)
                 try:
-                    head, activity = meta.result()
+                    head, activity = head_fut.result()
                 except Exception as exc:
                     head, activity = None, {"commits_1h": None, "commits_24h": None,
                                             "actors_24h": None}
                     ctx.error("repo:" + repo["key"], "head/activity failed: %r" % exc)
+                try:
+                    _apply_lineage(ctx, repo, lanes, lane_meta)
+                except Exception as exc:
+                    ctx.error("repo:" + repo["key"], "lineage failed: %r" % exc)
                 _overlaps([l for l in lanes if l["kind"] == "worktree"])
                 work = [l for l in lanes if l["kind"] == "worktree"]
                 repos_out.append({
@@ -585,6 +956,11 @@ def build_snapshot() -> dict:
         _attach_actors(ctx, repos_out, now_ts, slept)
     except Exception as exc:
         ctx.error("snapshot", "unexpected failure: %r" % exc)
+    night = None
+    try:
+        night = _night_pending(ctx)
+    except Exception as exc:
+        ctx.error("night", "night pending failed: %r" % exc)
     for r in repos_out:
         for lane in r["lanes"]:
             lane.pop("_changed", None)
@@ -594,6 +970,7 @@ def build_snapshot() -> dict:
         "duration_ms": int((time.monotonic() - t0) * 1000),
         "slept": slept,
         "errors": ctx.errors,
+        "night": night,
         "repos": repos_out,
     }
 
@@ -679,6 +1056,11 @@ def render_text(snapshot: dict, color: bool = True, repo_key=None, quiet: bool =
         snapshot.get("generated_at", "")[:19].replace("T", " ") + "Z",
         snapshot.get("duration_ms", -1),
         _paint("  SLEPT — liveness unknown", "UNKNOWN", color) if snapshot.get("slept") else ""))
+    night = snapshot.get("night") or {}
+    if night:
+        out.append(_paint("  /night  %s digest(s) pending · %s recent conv(s) — %s" % (
+            night.get("pending_session_digests"), night.get("recent_convs"),
+            night.get("evidence") or ""), "dim", color))
     for e in snapshot.get("errors", []):
         out.append(_paint("  ! %s — %s" % (e.get("scope"), e.get("message")), "RESCUE", color))
     for repo in snapshot.get("repos", []):
@@ -702,30 +1084,43 @@ def render_text(snapshot: dict, color: bool = True, repo_key=None, quiet: bool =
                 continue
             g = lane.get("git") or {}
             out.append("")
-            out.append("  %s  %-22s %-24s %s" % (
+            depth = int(lane.get("depth") or 0)
+            indent = "  " + ("  " * max(0, depth))
+            parent_note = ""
+            if lane.get("kind") != "main":
+                pb = lane.get("parent_branch") or "main"
+                parent_note = "  ← %s" % pb
+                if lane.get("route_status") == "dead_route":
+                    parent_note += "  DEAD"
+                if lane.get("role") and lane.get("role") not in ("feature", "main", "unknown"):
+                    parent_note += "  [%s]" % lane.get("role")
+            out.append("%s%s  %-22s %-24s %s%s" % (
+                indent,
                 _paint("%-7s" % lane.get("verdict"), lane.get("verdict"), color),
                 lane.get("name"), lane.get("branch") or "-",
                 _paint("+%s/-%s  %sM %sS %s??  %s" % (
                     g.get("ahead"), g.get("behind"), g.get("modified"), g.get("staged"),
-                    g.get("untracked"), _day_label(lane.get("age_days"))), "dim", color)))
-            out.append("      %s" % _paint(lane.get("verdict_reason") or "", "dim", color))
+                    g.get("untracked"), _day_label(lane.get("age_days"))), "dim", color),
+                _paint(parent_note, "dim", color)))
+            out.append("%s    %s" % (indent, _paint(lane.get("verdict_reason") or "", "dim", color)))
             if lane.get("purpose"):
-                out.append("      %s" % _paint("purpose: %s  [%s]" % (
-                    lane["purpose"], lane.get("purpose_source")), "dim", color))
+                out.append("%s    %s" % (indent, _paint("purpose: %s  [%s]" % (
+                    lane["purpose"], lane.get("purpose_source")), "dim", color)))
             else:
-                out.append("      %s" % _paint("no purpose recorded", "dim", color))
+                out.append("%s    %s" % (indent, _paint("no purpose recorded", "dim", color)))
             for a in lane.get("actors", []):
-                out.append("      %s %s  %s" % (
+                out.append("%s    %s %s  %s" % (
+                    indent,
                     _paint("●", a.get("liveness", "unknown"), color),
                     _paint("%-9s" % a.get("liveness"), a.get("liveness", "unknown"), color),
                     "%s — %s%s" % (a.get("label"), a.get("evidence"),
                                    _paint("  [CONFLICT]", "RESCUE", color)
                                    if a.get("conflict") else "")))
             if lane.get("overlaps"):
-                out.append("      %s" % _paint("overlaps %s on %d file(s): %s" % (
+                out.append("%s    %s" % (indent, _paint("overlaps %s on %d file(s): %s" % (
                     ", ".join(lane["overlaps"]), len(lane["overlap_files"]),
                     ", ".join(os.path.basename(f) for f in lane["overlap_files"][:4])),
-                    "DIRTY", color))
+                    "DIRTY", color)))
     return "\n".join(out)
 
 

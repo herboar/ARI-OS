@@ -173,11 +173,38 @@ def _now() -> str:
     return datetime.now(timezone.utc).isoformat()
 
 
+def _live_writer_on(worktree: str | None, workers: list) -> dict | None:
+    """Return a running non-read-only worker already on this worktree, if any."""
+    if not worktree:
+        return None
+    target = str(Path(worktree).resolve())
+    for w in workers:
+        if not isinstance(w, dict):
+            continue
+        if w.get("status") not in ("running", "blocked"):
+            continue
+        if w.get("read_only"):
+            continue
+        wt = w.get("worktree") or w.get("cwd")
+        if not wt:
+            continue
+        try:
+            if str(Path(wt).resolve()) == target:
+                return w
+        except Exception:
+            continue
+    return None
+
+
 def cmd_start(a) -> None:
     read_only = bool(getattr(a, "read_only", False))
     purpose = getattr(a, "purpose", None)
     allow_main_tree = bool(getattr(a, "allow_main_tree", False))
     effort = getattr(a, "effort", None)
+    parent_branch = getattr(a, "from_branch", None) or getattr(a, "parent", None)
+    role = getattr(a, "role", None)
+    route_status = getattr(a, "route_status", None) or "open"
+    force = bool(getattr(a, "force", False))
     if effort is not None and effort not in EFFORTS:
         sys.exit(f"Unknown effort: {effort}. One of {sorted(EFFORTS)}")
     if a.executor not in EXECUTORS:
@@ -190,7 +217,8 @@ def cmd_start(a) -> None:
             f"Refusing to run a writing worker inside a MAIN working tree: {a.cwd}\n"
             "One working tree = one committer, and the main tree belongs to the "
             "interactive session.\n"
-            "Fix: git worktree add .claude/worktrees/<slug> -b agent/<slug>\n"
+            "Fix: git worktree add .claude/worktrees/<slug> -b agent/<slug> [<parent>]\n"
+            "     (pass parent branch tip for variants — Ari linear model)\n"
             "     then pass that worktree as --cwd.\n"
             "Or pass --read-only (read-only workers may audit a live tree), "
             "or --allow-main-tree if you truly mean it.")
@@ -201,14 +229,28 @@ def cmd_start(a) -> None:
         print("dispatch: warning: no --purpose given. The lane board will show "
               "this worker's lane as unnamed; pass --purpose \"...\" next time.",
               file=sys.stderr)
+    worktree = worktree_of(a.cwd)
+    branch = branch_of(a.cwd)
+    # Preflight: refuse a second writer on the same worktree (lane collision).
+    with state.locked():
+        workers = state.read_workers()
+        clash = None if (read_only or force) else _live_writer_on(worktree or a.cwd, workers)
+        if clash:
+            sys.exit(
+                f"Refusing: lane already has a live writer {clash.get('id')} "
+                f"({clash.get('label')}) on {worktree or a.cwd}.\n"
+                "One working tree = one committer. Wait, close the other, or "
+                "pass --force if you truly mean it.")
+    # Default role from parent: variant if forked from non-main
+    if not role:
+        if parent_branch and parent_branch not in ("main", "master"):
+            role = "variant"
+        else:
+            role = "feature" if not read_only else "review"
     task = Path(a.task_file).read_text()
     wid = worker_id(a.label)
     argv = build_claude_argv(a.executor, a.cwd, a.add_dir or [], read_only,
                              effort)
-    # Identity is resolved at spawn, while the worktree provably still exists.
-    # Any git failure stores null; it never blocks a dispatch.
-    worktree = worktree_of(a.cwd)
-    branch = branch_of(a.cwd)
     pid = spawn(wid, argv, a.cwd, task)
     started = pid_start(pid)
     with state.locked():
@@ -219,7 +261,10 @@ def cmd_start(a) -> None:
                         "started_at": _now(),
                         "worktree": worktree, "branch": branch,
                         "pid_start": started, "read_only": read_only,
-                        "purpose": purpose})
+                        "purpose": purpose,
+                        "parent_branch": parent_branch,
+                        "role": role,
+                        "route_status": route_status})
         state.write_workers(workers)
     print(wid)
 
@@ -339,6 +384,7 @@ def cmd_close(a) -> None:
             sys.exit(f"Cannot determine the integration branch in {repo}.")
 
     merged = _git_rc(repo, "merge-base", "--is-ancestor", branch, into)[0] == 0
+    mode = getattr(a, "mode", None)
     plan = [f"repo       {repo}",
             f"worktree   {worktree}",
             f"branch     {branch} -> {into}" + ("  (already merged)" if merged else ""),
@@ -348,8 +394,11 @@ def cmd_close(a) -> None:
         print("\n(dry run: nothing done)")
         return
 
-    # 2. Merge, unless the branch is already an ancestor of the target.
-    if not merged:
+    # 2. Merge, unless dead route or already an ancestor of the target.
+    if mode in ("dead", "dead_route"):
+        print(f"dead route {branch} — skipping merge into {into}")
+        merged = True  # treat as no-merge path for branch delete care
+    elif not merged:
         msg = f"merge({branch}): {worker.get('purpose') or a.label}" if worker \
               else f"merge({branch})"
         rc, out, err = _git_rc(repo, "merge", "--no-ff", branch, "-m", msg)
@@ -365,9 +414,11 @@ def cmd_close(a) -> None:
         sys.exit(f"worktree remove failed (branch is merged, nothing lost):\n{err}")
     print(f"removed    {worktree}")
 
-    # 4. Safe branch delete. -d, never -D: it refuses anything unmerged.
+    # 4. Branch delete. -d by default (refuses unmerged). Dead routes use -D
+    # because they intentionally never merge — the discard is the point.
     if not a.keep_branch:
-        rc, out, err = _git_rc(repo, "branch", "-d", branch)
+        flag = "-D" if mode in ("dead", "dead_route") else "-d"
+        rc, out, err = _git_rc(repo, "branch", flag, branch)
         print(f"deleted    {branch}" if rc == 0
               else f"kept       {branch} ({err.splitlines()[0] if err else 'not deleted'})")
 
@@ -426,6 +477,17 @@ def main() -> None:
     s.add_argument("--read-only", action="store_true")
     s.add_argument("--purpose", default=None,
                    help="one line on why this lane exists; shown on the lane board")
+    s.add_argument("--from", dest="from_branch", default=None,
+                   help="parent branch this lane forked from (Ari linear model); "
+                        "recorded for the lane board lineage graph")
+    s.add_argument("--parent", dest="parent", default=None,
+                   help="alias for --from")
+    s.add_argument("--role", default=None,
+                   help="feature|variant|review — defaults from --from")
+    s.add_argument("--route-status", dest="route_status", default=None,
+                   help="open|winner|dead_route|merged")
+    s.add_argument("--force", action="store_true",
+                   help="allow a second writer on an already-occupied worktree")
     s.add_argument("--allow-main-tree", action="store_true", dest="allow_main_tree",
                    help="permit a writing worker inside a MAIN working tree")
     sub.add_parser("list").set_defaults(fn=cmd_list)
@@ -440,6 +502,8 @@ def main() -> None:
                    help="integration branch (default: main tree's current HEAD)")
     c.add_argument("--keep-branch", action="store_true", dest="keep_branch")
     c.add_argument("--allow-main-tree", action="store_true", dest="allow_main_tree")
+    c.add_argument("--mode", default=None,
+                   help="winner|dead|feature — dead skips merge (dead route)")
     c.add_argument("--dry-run", action="store_true", dest="dry_run")
     sub.add_parser("questions").set_defaults(fn=cmd_questions)
     an = sub.add_parser("answer"); an.set_defaults(fn=cmd_answer)
