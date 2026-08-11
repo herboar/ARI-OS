@@ -1,0 +1,708 @@
+{
+  "schema": 2,
+  "generated_at": "2026-08-11T04:52:12.585126+00:00",
+  "duration_ms": 94,
+  "slept": false,
+  "_fixture": true,
+  "errors": [],
+  "night": {
+    "pending_session_digests": 26,
+    "recent_convs": 42,
+    "evidence": "26 source(s) ready for tier-0\u21921 distill; 42 conv transcript(s) active in 48h"
+  },
+  "repos": [
+    {
+      "key": "animarek",
+      "name": "Animarek",
+      "path": "/Users/mmarek/Desktop/ClaudeCode_Projects/EA_Animarek",
+      "base": "main",
+      "head": {
+        "sha": "49fef2a",
+        "subject": "docs: Ari worktree doctrine",
+        "when": "2026-08-11T03:52:12.585126+00:00",
+        "author": "Matias Marek",
+        "age_s": 3600
+      },
+      "activity": {
+        "commits_1h": 0,
+        "commits_24h": 6,
+        "actors_24h": 1
+      },
+      "totals": {
+        "lanes": 1,
+        "unmerged_commits": 0,
+        "uncommitted_files": 0
+      },
+      "lanes": [
+        {
+          "id": "animarek:main",
+          "kind": "main",
+          "name": "main",
+          "purpose": null,
+          "purpose_source": null,
+          "path": "/Users/mmarek/Desktop/ClaudeCode_Projects/EA_Animarek",
+          "branch": "main",
+          "head": {
+            "sha": "49fef2a",
+            "subject": "docs: Ari worktree doctrine",
+            "when": "2026-08-11T03:52:12.585126+00:00",
+            "author": "Matias Marek",
+            "age_s": 3600
+          },
+          "git": {
+            "ahead": 0,
+            "behind": 0,
+            "modified": 0,
+            "staged": 0,
+            "untracked": 160,
+            "merged_into_base": true
+          },
+          "verdict": "CLEAN",
+          "verdict_reason": "main working tree",
+          "age_days": 0,
+          "size_bytes": null,
+          "actors": [
+            {
+              "id": "session:anim",
+              "kind": "session",
+              "label": "interactive",
+              "read_only": false,
+              "liveness": "live",
+              "evidence": "transcript wrote 40s ago",
+              "last_seen_age_s": 40,
+              "conflict": false,
+              "source": "transcript"
+            }
+          ],
+          "overlaps": [],
+          "overlap_files": [],
+          "history": [],
+          "parent_id": null,
+          "parent_branch": null,
+          "fork_point": null,
+          "depth": 0,
+          "role": "main",
+          "route_status": "open",
+          "integration": {
+            "target_branch": "main",
+            "target_lane_id": "animarek:main",
+            "ahead_of_parent": 0,
+            "behind_parent": 0,
+            "merged_into_parent": true
+          },
+          "lineage_source": "none",
+          "lineage_confidence": "high",
+          "_tree_ord": 0
+        }
+      ]
+    },
+    {
+      "key": "xfactor",
+      "name": "X-Factor",
+      "path": "/Users/mmarek/Desktop/ClaudeCode_Projects/EA-xfactor",
+      "base": "main",
+      "head": {
+        "sha": "ec56f335",
+        "subject": "transcripts: diarized Mica session",
+        "when": "2026-08-08T04:52:12.585126+00:00",
+        "author": "Matias Marek",
+        "age_s": 259200
+      },
+      "activity": {
+        "commits_1h": 2,
+        "commits_24h": 11,
+        "actors_24h": 2
+      },
+      "totals": {
+        "lanes": 8,
+        "unmerged_commits": 26,
+        "uncommitted_files": 21
+      },
+      "lanes": [
+        {
+          "id": "xfactor:main",
+          "kind": "main",
+          "name": "main",
+          "purpose": "Mati interactive \u2014 only committer on main",
+          "purpose_source": "lane-file",
+          "path": "/Users/mmarek/Desktop/ClaudeCode_Projects/EA-xfactor",
+          "branch": "main",
+          "head": {
+            "sha": "ec56f335",
+            "subject": "transcripts: diarized Mica session",
+            "when": "2026-08-08T04:52:12.585126+00:00",
+            "author": "Matias Marek",
+            "age_s": 259200
+          },
+          "git": {
+            "ahead": 0,
+            "behind": 0,
+            "modified": 2,
+            "staged": 0,
+            "untracked": 1355,
+            "merged_into_base": true
+          },
+          "verdict": "CLEAN",
+          "verdict_reason": "main working tree",
+          "age_days": 3,
+          "size_bytes": null,
+          "actors": [
+            {
+              "id": "session:mati",
+              "kind": "session",
+              "label": "interactive (VS Code)",
+              "read_only": false,
+              "liveness": "live",
+              "evidence": "transcript wrote 12s ago",
+              "last_seen_age_s": 12,
+              "conflict": false,
+              "source": "transcript"
+            }
+          ],
+          "overlaps": [],
+          "overlap_files": [],
+          "history": [
+            {
+              "when": null,
+              "age": "3d ago",
+              "sha": "ec56f33",
+              "who": "Matias Marek",
+              "what": "transcripts: diarized Mica session"
+            }
+          ],
+          "parent_id": null,
+          "parent_branch": null,
+          "fork_point": null,
+          "depth": 0,
+          "role": "main",
+          "route_status": "open",
+          "integration": {
+            "target_branch": "main",
+            "target_lane_id": "xfactor:main",
+            "ahead_of_parent": 0,
+            "behind_parent": 0,
+            "merged_into_parent": true
+          },
+          "lineage_source": "none",
+          "lineage_confidence": "high",
+          "_tree_ord": 0
+        },
+        {
+          "id": "xfactor:broll-unit-01",
+          "kind": "worktree",
+          "name": "broll-unit-01",
+          "purpose": "FEATURE \u00b7 B-roll unit 1 (open all week). Linear home for related work \u2014 Ari: stay here, don't re-fork main.",
+          "purpose_source": "dispatch",
+          "path": "/Users/mmarek/Desktop/ClaudeCode_Projects/EA-xfactor/.claude/worktrees/broll-unit-01",
+          "branch": "agent/broll-unit-01",
+          "head": {
+            "sha": "a1b2c3d",
+            "subject": "broll: assemble first caption unit",
+            "when": "2026-08-11T02:52:12.585126+00:00",
+            "author": "Matias Marek",
+            "age_s": 7200
+          },
+          "git": {
+            "ahead": 8,
+            "behind": 3,
+            "modified": 2,
+            "staged": 0,
+            "untracked": 4,
+            "merged_into_base": false
+          },
+          "verdict": "DIRTY",
+          "verdict_reason": "8 unmerged commits plus 6 uncommitted files",
+          "age_days": 0,
+          "size_bytes": 48000000,
+          "actors": [
+            {
+              "id": "w-broll",
+              "kind": "worker",
+              "label": "broll-unit-01",
+              "read_only": false,
+              "liveness": "live",
+              "evidence": "pid 41022 alive + log wrote 8s ago",
+              "last_seen_age_s": 8,
+              "conflict": false,
+              "source": "ari-os-log"
+            }
+          ],
+          "overlaps": [],
+          "overlap_files": [],
+          "history": [
+            {
+              "when": null,
+              "age": "lane opened",
+              "sha": null,
+              "who": "dispatch",
+              "what": "Lane opened: B-roll unit 1 end-to-end"
+            },
+            {
+              "when": null,
+              "age": "2h ago",
+              "sha": "a1b2c3d",
+              "who": "worker",
+              "what": "broll: assemble first caption unit"
+            },
+            {
+              "when": null,
+              "age": "1d ago",
+              "sha": "91aa220",
+              "who": "Matias Marek",
+              "what": "broll: plan shots + asset list"
+            }
+          ],
+          "parent_id": null,
+          "parent_branch": "main",
+          "fork_point": {
+            "sha": "ec56f335",
+            "age_s": 432000
+          },
+          "depth": 1,
+          "role": "feature",
+          "route_status": "open",
+          "integration": {
+            "target_branch": "main",
+            "target_lane_id": "xfactor:main",
+            "ahead_of_parent": 8,
+            "behind_parent": 3,
+            "merged_into_parent": false
+          },
+          "lineage_source": "declared",
+          "lineage_confidence": "high",
+          "_tree_ord": 1
+        },
+        {
+          "id": "xfactor:dp2-2b2",
+          "kind": "worktree",
+          "name": "dp2-2b2",
+          "purpose": "VARIANT of broll \u00b7 looping muted video/GIF backgrounds (Gate-3). Forked from broll tip \u2014 merge back to broll, not main.",
+          "purpose_source": "dispatch",
+          "path": "/Users/mmarek/Desktop/ClaudeCode_Projects/EA-xfactor/.claude/worktrees/dp2-2b2",
+          "branch": "agent/dp2-2b2",
+          "head": {
+            "sha": "d4e5f60",
+            "subject": "dp2: GIF bg layer + mute loop",
+            "when": "2026-08-10T22:52:12.585126+00:00",
+            "author": "Matias Marek",
+            "age_s": 21600
+          },
+          "git": {
+            "ahead": 5,
+            "behind": 1,
+            "modified": 0,
+            "staged": 0,
+            "untracked": 0,
+            "merged_into_base": false
+          },
+          "verdict": "MERGE",
+          "verdict_reason": "5 commits ready to integrate into parent feature",
+          "age_days": 0,
+          "size_bytes": 12000000,
+          "actors": [
+            {
+              "id": "w-dp2",
+              "kind": "worker",
+              "label": "dp2-2b2",
+              "read_only": false,
+              "liveness": "warm",
+              "evidence": "pid alive, log quiet 6m",
+              "last_seen_age_s": 360,
+              "conflict": false,
+              "source": "ari-os-log"
+            }
+          ],
+          "overlaps": [
+            "xfactor:editor-ux-batch"
+          ],
+          "overlap_files": [
+            "content-engine/tools/slide_editor/schema.py",
+            "content-engine/tools/slide_editor/server.py"
+          ],
+          "history": [
+            {
+              "when": null,
+              "age": "lane opened",
+              "sha": null,
+              "who": "dispatch",
+              "what": "Lane opened: dp2 as child of broll-unit-01"
+            },
+            {
+              "when": null,
+              "age": "6h ago",
+              "sha": "d4e5f60",
+              "who": "worker",
+              "what": "dp2: GIF bg layer + mute loop"
+            }
+          ],
+          "parent_id": "xfactor:broll-unit-01",
+          "parent_branch": "agent/broll-unit-01",
+          "fork_point": {
+            "sha": "91aa220",
+            "age_s": 86400
+          },
+          "depth": 2,
+          "role": "variant",
+          "route_status": "open",
+          "integration": {
+            "target_branch": "agent/broll-unit-01",
+            "target_lane_id": "xfactor:broll-unit-01",
+            "ahead_of_parent": 5,
+            "behind_parent": 1,
+            "merged_into_parent": false
+          },
+          "lineage_source": "declared",
+          "lineage_confidence": "high",
+          "_tree_ord": 2
+        },
+        {
+          "id": "xfactor:editor-ux-batch",
+          "kind": "worktree",
+          "name": "editor-ux-batch",
+          "purpose": "VARIANT of broll \u00b7 slide_editor UX batch (unique-BG, delete slide). Same feature line as broll \u2014 not a peer off main.",
+          "purpose_source": "dispatch",
+          "path": "/Users/mmarek/Desktop/ClaudeCode_Projects/EA-xfactor/.claude/worktrees/editor-ux-batch",
+          "branch": "agent/editor-ux-batch",
+          "head": {
+            "sha": "e7f8091",
+            "subject": "editor: unique-BG package + inspector",
+            "when": "2026-08-10T23:52:12.585126+00:00",
+            "author": "Matias Marek",
+            "age_s": 18000
+          },
+          "git": {
+            "ahead": 7,
+            "behind": 0,
+            "modified": 0,
+            "staged": 0,
+            "untracked": 0,
+            "merged_into_base": false
+          },
+          "verdict": "MERGE",
+          "verdict_reason": "7 commits ready to integrate into parent feature",
+          "age_days": 0,
+          "size_bytes": 9000000,
+          "actors": [],
+          "overlaps": [
+            "xfactor:dp2-2b2"
+          ],
+          "overlap_files": [
+            "content-engine/tools/slide_editor/schema.py",
+            "content-engine/tools/slide_editor/server.py"
+          ],
+          "history": [
+            {
+              "when": null,
+              "age": "lane opened",
+              "sha": null,
+              "who": "dispatch",
+              "what": "Lane opened: editor UX as child of broll-unit-01"
+            },
+            {
+              "when": null,
+              "age": "5h ago",
+              "sha": "e7f8091",
+              "who": "worker",
+              "what": "editor: unique-BG package + inspector"
+            }
+          ],
+          "parent_id": "xfactor:broll-unit-01",
+          "parent_branch": "agent/broll-unit-01",
+          "fork_point": {
+            "sha": "91aa220",
+            "age_s": 86400
+          },
+          "depth": 2,
+          "role": "variant",
+          "route_status": "open",
+          "integration": {
+            "target_branch": "agent/broll-unit-01",
+            "target_lane_id": "xfactor:broll-unit-01",
+            "ahead_of_parent": 7,
+            "behind_parent": 0,
+            "merged_into_parent": false
+          },
+          "lineage_source": "declared",
+          "lineage_confidence": "high",
+          "_tree_ord": 3
+        },
+        {
+          "id": "xfactor:reel-covers",
+          "kind": "worktree",
+          "name": "reel-covers",
+          "purpose": "FEATURE \u00b7 Reel covers for phone-drive + survival-mode. Own line off main (different product surface).",
+          "purpose_source": "dispatch",
+          "path": "/Users/mmarek/Desktop/ClaudeCode_Projects/EA-xfactor/.claude/worktrees/reel-covers",
+          "branch": "agent/reel-covers",
+          "head": {
+            "sha": "df46d671",
+            "subject": "covers: bake typography into frame 0",
+            "when": "2026-08-02T04:52:12.585126+00:00",
+            "author": "Matias Marek",
+            "age_s": 777600
+          },
+          "git": {
+            "ahead": 0,
+            "behind": 62,
+            "modified": 1,
+            "staged": 0,
+            "untracked": 14,
+            "merged_into_base": true
+          },
+          "verdict": "RESCUE",
+          "verdict_reason": "merged into main, but 14 untracked + 1 modified remain (deliverables git will never see)",
+          "age_days": 9,
+          "size_bytes": 120000000,
+          "actors": [],
+          "overlaps": [],
+          "overlap_files": [],
+          "history": [
+            {
+              "when": null,
+              "age": "lane opened",
+              "sha": null,
+              "who": "dispatch",
+              "what": "Lane opened: reel covers feature"
+            },
+            {
+              "when": null,
+              "age": "9d ago",
+              "sha": "df46d67",
+              "who": "Matias Marek",
+              "what": "covers: bake typography into frame 0"
+            }
+          ],
+          "parent_id": null,
+          "parent_branch": "main",
+          "fork_point": {
+            "sha": "oldmain01",
+            "age_s": 1209600
+          },
+          "depth": 1,
+          "role": "feature",
+          "route_status": "merged",
+          "integration": {
+            "target_branch": "main",
+            "target_lane_id": "xfactor:main",
+            "ahead_of_parent": 0,
+            "behind_parent": 62,
+            "merged_into_parent": true
+          },
+          "lineage_source": "declared",
+          "lineage_confidence": "high",
+          "_tree_ord": 4
+        },
+        {
+          "id": "xfactor:covers-dark",
+          "kind": "worktree",
+          "name": "covers-dark",
+          "purpose": "A/B of reel-covers \u00b7 dark-mode plates. Winner candidate \u2014 merge to reel-covers only.",
+          "purpose_source": "dispatch",
+          "path": "/Users/mmarek/Desktop/ClaudeCode_Projects/EA-xfactor/.claude/worktrees/covers-dark",
+          "branch": "agent/covers-dark",
+          "head": {
+            "sha": "c0ffee1",
+            "subject": "covers: dark plate variant",
+            "when": "2026-08-09T04:52:12.585126+00:00",
+            "author": "Matias Marek",
+            "age_s": 172800
+          },
+          "git": {
+            "ahead": 3,
+            "behind": 0,
+            "modified": 0,
+            "staged": 0,
+            "untracked": 0,
+            "merged_into_base": false
+          },
+          "verdict": "MERGE",
+          "verdict_reason": "3 commits ready to merge into parent feature reel-covers",
+          "age_days": 2,
+          "size_bytes": 22000000,
+          "actors": [
+            {
+              "id": "w-dark",
+              "kind": "worker",
+              "label": "covers-dark",
+              "read_only": false,
+              "liveness": "cold",
+              "evidence": "pid dead, log quiet 2d",
+              "last_seen_age_s": 172800,
+              "conflict": false,
+              "source": "ari-os-log"
+            }
+          ],
+          "overlaps": [],
+          "overlap_files": [],
+          "history": [
+            {
+              "when": null,
+              "age": "lane opened",
+              "sha": null,
+              "who": "dispatch",
+              "what": "Lane opened: A/B dark from agent/reel-covers"
+            },
+            {
+              "when": null,
+              "age": "2d ago",
+              "sha": "c0ffee1",
+              "who": "worker",
+              "what": "covers: dark plate variant"
+            }
+          ],
+          "parent_id": "xfactor:reel-covers",
+          "parent_branch": "agent/reel-covers",
+          "fork_point": {
+            "sha": "df46d671",
+            "age_s": 777600
+          },
+          "depth": 2,
+          "role": "variant",
+          "route_status": "open",
+          "integration": {
+            "target_branch": "agent/reel-covers",
+            "target_lane_id": "xfactor:reel-covers",
+            "ahead_of_parent": 3,
+            "behind_parent": 0,
+            "merged_into_parent": false
+          },
+          "lineage_source": "declared",
+          "lineage_confidence": "high",
+          "_tree_ord": 5
+        },
+        {
+          "id": "xfactor:covers-bigtype",
+          "kind": "worktree",
+          "name": "covers-bigtype",
+          "purpose": "A/B of reel-covers \u00b7 bigger type \u2014 DISCARDED. Dead route: will not merge to main or parent.",
+          "purpose_source": "dispatch",
+          "path": "/Users/mmarek/Desktop/ClaudeCode_Projects/EA-xfactor/.claude/worktrees/covers-bigtype",
+          "branch": "agent/covers-bigtype",
+          "head": {
+            "sha": "badf00d",
+            "subject": "covers: oversized type experiment",
+            "when": "2026-08-08T04:52:12.585126+00:00",
+            "author": "Matias Marek",
+            "age_s": 259200
+          },
+          "git": {
+            "ahead": 2,
+            "behind": 0,
+            "modified": 0,
+            "staged": 0,
+            "untracked": 0,
+            "merged_into_base": false
+          },
+          "verdict": "SWEEP",
+          "verdict_reason": "dead route \u2014 discarded A/B; reclaim worktree when clean",
+          "age_days": 3,
+          "size_bytes": 18000000,
+          "actors": [],
+          "overlaps": [],
+          "overlap_files": [],
+          "history": [
+            {
+              "when": null,
+              "age": "lane opened",
+              "sha": null,
+              "who": "dispatch",
+              "what": "Lane opened: A/B bigtype from agent/reel-covers"
+            },
+            {
+              "when": null,
+              "age": "3d ago",
+              "sha": "badf00d",
+              "who": "worker",
+              "what": "covers: oversized type experiment"
+            },
+            {
+              "when": null,
+              "age": "2d ago",
+              "sha": "dead000",
+              "who": "Matias Marek",
+              "what": "decision: dead route \u2014 dark wins"
+            }
+          ],
+          "parent_id": "xfactor:reel-covers",
+          "parent_branch": "agent/reel-covers",
+          "fork_point": {
+            "sha": "df46d671",
+            "age_s": 777600
+          },
+          "depth": 2,
+          "role": "variant",
+          "route_status": "dead_route",
+          "integration": {
+            "target_branch": "agent/reel-covers",
+            "target_lane_id": "xfactor:reel-covers",
+            "ahead_of_parent": 2,
+            "behind_parent": 0,
+            "merged_into_parent": false
+          },
+          "lineage_source": "declared",
+          "lineage_confidence": "high",
+          "_tree_ord": 6
+        },
+        {
+          "id": "xfactor:script-issue01",
+          "kind": "worktree",
+          "name": "script-issue01",
+          "purpose": "FEATURE \u00b7 PARKED 2026-08-04 pending DTC study \u2014 independent of broll line.",
+          "purpose_source": "lane-file",
+          "path": "/Users/mmarek/Desktop/ClaudeCode_Projects/EA-xfactor/.claude/worktrees/script-issue01",
+          "branch": "agent/script-issue01",
+          "head": {
+            "sha": "51c1001",
+            "subject": "script: issue01 draft v0",
+            "when": "2026-08-05T04:52:12.585126+00:00",
+            "author": "Matias Marek",
+            "age_s": 518400
+          },
+          "git": {
+            "ahead": 1,
+            "behind": 40,
+            "modified": 0,
+            "staged": 0,
+            "untracked": 0,
+            "merged_into_base": false
+          },
+          "verdict": "PARKED",
+          "verdict_reason": "parked by Mati 2026-08-04",
+          "age_days": 6,
+          "size_bytes": 2000000,
+          "actors": [],
+          "overlaps": [],
+          "overlap_files": [],
+          "history": [
+            {
+              "when": null,
+              "age": "6d ago",
+              "sha": "51c1001",
+              "who": "Matias Marek",
+              "what": "script: issue01 draft v0"
+            }
+          ],
+          "parent_id": null,
+          "parent_branch": "main",
+          "fork_point": {
+            "sha": "oldmain02",
+            "age_s": 864000
+          },
+          "depth": 1,
+          "role": "feature",
+          "route_status": "open",
+          "integration": {
+            "target_branch": "main",
+            "target_lane_id": "xfactor:main",
+            "ahead_of_parent": 1,
+            "behind_parent": 40,
+            "merged_into_parent": false
+          },
+          "lineage_source": "declared",
+          "lineage_confidence": "high",
+          "_tree_ord": 7
+        }
+      ]
+    }
+  ]
+}
