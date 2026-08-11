@@ -276,98 +276,233 @@ def _rail_nested(lane: dict, scale: int) -> str:
                origin_x, d, m["color"], m["dash"], apex, m["radius"], m["color"], ring, dead_mark))
 
 
-def _rail_elbow(lane: dict, scale: int) -> str:
-    """Elbow as hierarchy (Mati mental model):
+def _assign_graph_columns(lanes: list) -> dict:
+    """One column per worktree family: MAIN | WT1 | A/B… | WT2 | A/B… |
 
-    main  (vertical spine)
-      └── worktree  (elbow off main)          depth 1  · labeled WORKTREE
-            └── A/B variant (elbow off worktree column)  depth 2+ · labeled A/B
+    Returns layout keyed by lane id:
+      {col, parent_col, n_cols, family}  family = 'main'|'worktree'|'ab'
+    """
+    children: dict = {}
+    main = None
+    for lane in lanes:
+        if lane.get("kind") == "main":
+            main = lane
+            continue
+        pid = lane.get("parent_id") or "__main__"
+        children.setdefault(pid, []).append(lane)
 
-    Multiple worktrees stack as siblings off main. Variants never leave main
-    directly — they leave their parent worktree column.
+    def sort_kids(kids):
+        return sorted(kids, key=lambda l: (
+            l.get("_tree_ord") if l.get("_tree_ord") is not None else 99,
+            l.get("name") or ""))
+
+    layout = {}
+    col = 0
+    if main:
+        layout[main["id"]] = {"col": 0, "parent_col": None, "family": "main"}
+        col = 1
+
+    for wt in sort_kids(children.get("__main__", [])):
+        wt_col = col
+        layout[wt["id"]] = {"col": wt_col, "parent_col": 0, "family": "worktree"}
+        col += 1
+        # A/B (and deeper) as subcolumns immediately after this worktree
+        stack = [(wt["id"], wt_col)]
+        while stack:
+            pid, pcol = stack.pop(0)
+            for ch in sort_kids(children.get(pid, [])):
+                layout[ch["id"]] = {
+                    "col": col,
+                    "parent_col": pcol if pid == wt["id"] else layout[pid]["col"],
+                    "family": "ab",
+                }
+                my = col
+                col += 1
+                stack.append((ch["id"], my))
+
+    n_cols = max((v["col"] for v in layout.values()), default=0) + 1
+    for v in layout.values():
+        v["n_cols"] = n_cols
+    # orphans
+    for lane in lanes:
+        if lane["id"] not in layout:
+            layout[lane["id"]] = {
+                "col": col, "parent_col": 0, "family": "worktree", "n_cols": col + 1
+            }
+            col += 1
+            for v in layout.values():
+                v["n_cols"] = col
+    return layout
+
+
+def _rail_elbow(lane: dict, scale: int, layout: dict | None = None) -> str:
+    """Classic column git graph: one column per worktree; A/B as subcolumns.
+
+    Horizontal lines only go parent_col ↔ this_col (never cross the board).
+    A/B runs vertically in its subcolumn, then MERGE back to parent or DEAD stop.
     """
     m = _lane_metrics(lane, scale)
-    # Columns: main=18, worktrees=54, A/B=96  (readable steps)
-    col = {0: 18, 1: 54, 2: 96}
-    depth = min(int(m["depth"] or 0), 2)
-    # parent column: main for worktrees; worktree col for A/B
-    parent_col = col[0] if depth <= 1 else col[1]
-    node_col = col.get(depth, 96)
-    width = 128
+    layout = layout or {}
+    info = layout.get(lane.get("id") or "", {})
+    col = int(info.get("col") or 0)
+    parent_col = info.get("parent_col")
+    n_cols = int(info.get("n_cols") or max(col + 1, 1))
+    family = info.get("family") or ("main" if lane.get("kind") == "main" else "worktree")
 
-    if lane.get("kind") == "main":
-        return (
-            '<div class="lb-railcell lb-rail-hierarchy" data-style="elbow" data-depth="0">'
-            '<svg class="lb-rail" viewBox="0 0 %d 64" width="%d" height="64" role="img">'
-            '%s'
-            '<line x1="%d" y1="0" x2="%d" y2="64" stroke="var(--line)" stroke-width="2"/>'
-            '<circle class="node" cx="%d" cy="32" r="6" fill="var(--text2)" stroke="var(--bg)" stroke-width="1.5"/>'
-            '<text x="%d" y="36" font-size="9" font-weight="600" fill="var(--text3)">MAIN</text>'
-            '</svg></div>'
-            % (width, width, m["title"], col[0], col[0], col[0], col[0] + 12)
+    col_w = 22
+    x0 = 12
+    def X(c):
+        return x0 + int(c) * col_w
+
+    width = max(96, x0 + n_cols * col_w + 16)
+    h = 64
+    mid = 32
+    color = m["color"]
+    dead = m["dead"]
+    if dead:
+        color = "var(--text3)"
+
+    parts = [
+        '<div class="lb-railcell lb-rail-cols" data-style="elbow" data-depth="%d" '
+        'data-family="%s" data-col="%d">'
+        '<svg class="lb-rail" viewBox="0 0 %d %d" width="%d" height="%d" role="img">'
+        % (m["depth"], _e(family), col, width, h, width, h),
+        m["title"],
+    ]
+
+    # Faint guides for every column
+    for c in range(n_cols):
+        parts.append(
+            '<line x1="%d" y1="0" x2="%d" y2="%d" stroke="var(--line)" '
+            'stroke-width="1" opacity=".35"/>' % (X(c), X(c), h)
         )
 
-    # Horizontal elbow: down parent column → right → node
-    # Start slightly above mid so consecutive worktrees read as siblings on main
-    d = ("M%d,0 L%d,20 L%d,20 L%d,32" % (parent_col, parent_col, node_col, node_col))
-    # Soft curve version for polish
-    d = ("M%d,4 L%d,18 Q%d,32 %d,32" % (parent_col, parent_col, parent_col + 8, node_col))
+    # Solid verticals: MAIN always; parent worktree column; this column
+    solid = {0, col}
+    if parent_col is not None:
+        solid.add(int(parent_col))
+    for c in sorted(solid):
+        if c == 0:
+            stroke, sw = "var(--text2)", 2.75
+        elif c == col:
+            stroke, sw = color, (2.5 if family == "worktree" else 2)
+        else:
+            stroke, sw = "var(--text3)", 2
+        if dead and c == col:
+            parts.append(
+                '<line x1="%d" y1="0" x2="%d" y2="%d" stroke="%s" stroke-width="%s" '
+                'stroke-dasharray="4 3"/>' % (X(c), X(c), mid, color, sw)
+            )
+        else:
+            parts.append(
+                '<line x1="%d" y1="0" x2="%d" y2="%d" stroke="%s" stroke-width="%s"/>'
+                % (X(c), X(c), h, stroke, sw)
+            )
 
-    radius = 5 if depth == 1 else 4
-    if m["dead"]:
-        m = dict(m)
-        m["color"] = "var(--text3)"
-
-    ring = ""
-    if _uncommitted(m["git"]) and lane.get("kind") == "worktree":
-        ring = (
-            '<circle cx="%d" cy="32" r="%d" fill="none" stroke="var(--red)" '
-            'stroke-width="1.25" opacity=".9"/>' % (node_col, radius + 3)
+    # MAIN node
+    if family == "main" or lane.get("kind") == "main":
+        parts.append(
+            '<circle class="node" cx="%d" cy="%d" r="6" fill="var(--text2)" '
+            'stroke="var(--bg)" stroke-width="1.5"/>' % (X(0), mid)
         )
+        parts.append(
+            '<text x="%d" y="%d" font-size="8" fill="var(--text3)" text-anchor="middle">'
+            'MAIN</text>' % (X(0), mid + 16)
+        )
+        parts.append("</svg></div>")
+        return "".join(parts)
 
-    # Kind label under node — WORKTREE vs A/B (the missing signal)
-    if m["dead"]:
-        kind_lbl = "DEAD"
-        kind_fill = "var(--text3)"
-    elif depth >= 2 or m["role"] == "variant":
-        kind_lbl = "A/B"
-        kind_fill = "var(--amber)"
+    # Horizontal fork from parent column → this column (only one hop)
+    if parent_col is not None:
+        px, cx = X(int(parent_col)), X(col)
+        y = mid if family == "worktree" else (mid - 10 if not dead else mid - 6)
+        # worktree: fork at mid; A/B: slightly higher so merge can sit at mid
+        if family == "ab":
+            y_fork = 18
+            parts.append(
+                '<path d="M%d,%d H%d" fill="none" stroke="%s" stroke-width="1.75"%s/>'
+                % (px, y_fork, cx, color,
+                   ' stroke-dasharray="4 3"' if dead else "")
+            )
+            # vertical run in subcolumn from fork to mid (or to dead)
+            y_end = mid if not (
+                dead
+            ) else mid
+            parts.append(
+                '<line x1="%d" y1="%d" x2="%d" y2="%d" stroke="%s" stroke-width="1.85"%s/>'
+                % (cx, y_fork, cx, y_end, color,
+                   ' stroke-dasharray="4 3"' if dead else "")
+            )
+            if dead:
+                # DEAD stop — X, no line below mid
+                parts.append(
+                    '<circle cx="%d" cy="%d" r="6" fill="none" stroke="var(--red)" '
+                    'stroke-width="1.5"/>' % (cx, mid)
+                )
+                parts.append(
+                    '<path d="M%d,%d L%d,%d M%d,%d L%d,%d" stroke="var(--red)" '
+                    'stroke-width="1.5"/>'
+                    % (cx - 4, mid - 4, cx + 4, mid + 4, cx + 4, mid - 4, cx - 4, mid + 4)
+                )
+                parts.append(
+                    '<text x="%d" y="%d" font-size="8" fill="var(--red)" '
+                    'text-anchor="middle">DEAD</text>' % (cx, mid + 16)
+                )
+            else:
+                merged = bool(m.get("merged_parent")) or (
+                    (lane.get("route_status") or "") in ("merged", "winner")
+                )
+                parts.append(
+                    '<circle cx="%d" cy="%d" r="4.5" fill="%s" '
+                    'stroke="var(--bg)" stroke-width="1.5"/>' % (cx, mid, color)
+                )
+                if merged:
+                    # Winner: rejoin parent worktree column
+                    parts.append(
+                        '<path d="M%d,%d H%d" fill="none" stroke="var(--olive)" '
+                        'stroke-width="1.85"/>' % (cx, mid, px)
+                    )
+                    parts.append(
+                        '<circle cx="%d" cy="%d" r="5.5" fill="var(--olive)" '
+                        'stroke="var(--bg)" stroke-width="1.5"/>' % (px, mid)
+                    )
+                    parts.append(
+                        '<text x="%d" y="%d" font-size="8" fill="var(--olive)" '
+                        'text-anchor="middle">MERGE</text>' % (px, mid + 16)
+                    )
+                else:
+                    # Still open: A/B column keeps running vertically
+                    parts.append(
+                        '<text x="%d" y="%d" font-size="8" fill="%s" '
+                        'text-anchor="middle">A/B</text>' % (cx, mid + 16, color)
+                    )
+        else:
+            # worktree fork from main
+            parts.append(
+                '<path d="M%d,%d H%d" fill="none" stroke="%s" stroke-width="2"/>'
+                % (px, mid, cx, color)
+            )
+            parts.append(
+                '<circle class="node" cx="%d" cy="%d" r="6" fill="%s" '
+                'stroke="var(--bg)" stroke-width="1.5"/>' % (cx, mid, color)
+            )
+            if _uncommitted(m["git"]):
+                parts.append(
+                    '<circle cx="%d" cy="%d" r="9" fill="none" stroke="var(--red)" '
+                    'stroke-width="1.25"/>' % (cx, mid)
+                )
+            parts.append(
+                '<text x="%d" y="%d" font-size="8" fill="var(--text3)" '
+                'text-anchor="middle">WT</text>' % (cx, mid + 16)
+            )
     else:
-        kind_lbl = "WORKTREE"
-        kind_fill = "var(--text3)"
-
-    kind_mark = (
-        '<text x="%d" y="48" font-size="8" font-weight="600" letter-spacing="0.04em" '
-        'fill="%s" text-anchor="middle">%s</text>' % (node_col, kind_fill, kind_lbl)
-    )
-
-    # Parent guide ticks: faint vertical at worktree column for A/B rows
-    guide = ""
-    if depth >= 2:
-        guide = (
-            '<line x1="%d" y1="0" x2="%d" y2="64" stroke="var(--line)" '
-            'stroke-width="1" stroke-dasharray="2 3" opacity=".55"/>' % (col[1], col[1])
+        parts.append(
+            '<circle class="node" cx="%d" cy="%d" r="6" fill="%s" '
+            'stroke="var(--bg)" stroke-width="1.5"/>' % (X(col), mid, color)
         )
 
-    return (
-        '<div class="lb-railcell lb-rail-hierarchy" data-style="elbow" data-depth="%d" '
-        'data-role="%s" data-route="%s" data-kind="%s">'
-        '<svg class="lb-rail" viewBox="0 0 %d 64" width="%d" height="64" role="img">'
-        '%s%s'
-        '<path class="branch" d="%s" stroke="%s" fill="none" stroke-width="1.85" '
-        'stroke-linecap="round" stroke-linejoin="round"%s/>'
-        '<circle class="node" cx="%d" cy="32" r="%d" fill="%s" stroke="var(--bg)" stroke-width="1.5"/>'
-        '%s%s'
-        '</svg></div>'
-        % (
-            depth, _e(m["role"]), _e(m["route"]),
-            "ab" if (depth >= 2 or m["role"] == "variant") else "worktree",
-            width, width, m["title"], guide,
-            d, m["color"], m["dash"],
-            node_col, radius, m["color"],
-            ring, kind_mark,
-        )
-    )
+    parts.append("</svg></div>")
+    return "".join(parts)
 
 
 def _rail_graph_dot(lane: dict, scale: int) -> str:
@@ -476,11 +611,12 @@ def _repo_mini_graph(repo: dict, scale: int) -> str:
             '%s</div>' % "".join(parts))
 
 
-def _rail_svg(lane: dict, scale: int, rail_style: str = "nested") -> str:
+def _rail_svg(lane: dict, scale: int, rail_style: str = "nested",
+              layout: dict | None = None) -> str:
     """Dispatch to the active bake-off rail style."""
-    style = rail_style if rail_style in ("nested", "elbow", "graph") else "nested"
+    style = rail_style if rail_style in ("nested", "elbow", "graph") else "elbow"
     if style == "elbow":
-        return _rail_elbow(lane, scale)
+        return _rail_elbow(lane, scale, layout)
     if style == "graph":
         return _rail_graph_dot(lane, scale)
     return _rail_nested(lane, scale)
@@ -606,7 +742,8 @@ def _parent_chip(lane: dict) -> str:
     return '<div class="lb-lineage-row">%s</div>' % "".join(bits)
 
 
-def _row(lane: dict, repo: dict, mode: str, scale: int, rail_style: str = "nested") -> str:
+def _row(lane: dict, repo: dict, mode: str, scale: int, rail_style: str = "elbow",
+         layout: dict | None = None) -> str:
     git = lane.get("git") or {}
     head = lane.get("head") or {}
     verdict = lane.get("verdict") or "CLEAN"
@@ -659,7 +796,7 @@ def _row(lane: dict, repo: dict, mode: str, scale: int, rail_style: str = "neste
     if mode == "rail":
         namecell = ('<div class="lb-name" style="padding-left:%dpx"><div class="n">%s%s</div>%s%s</div>'
                     % (pad, _e(name), kind_tag, sub, _actors(lane)))
-        cells = [_rail_svg(lane, scale, rail_style), namecell, _figs(git), _pill(lane),
+        cells = [_rail_svg(lane, scale, rail_style, layout), namecell, _figs(git), _pill(lane),
                  '<span class="lb-chev">&#8250;</span>']
     else:
         cells = [_pill(lane), namecell, _divergence(git, scale), _files(lane),
@@ -674,7 +811,7 @@ def _row(lane: dict, repo: dict, mode: str, scale: int, rail_style: str = "neste
             % (attrs, "".join(cells), ack, _lane_body(lane, repo)))
 
 
-def _repo_section(repo: dict, mode: str, scale: int, rail_style: str = "nested") -> str:
+def _repo_section(repo: dict, mode: str, scale: int, rail_style: str = "elbow") -> str:
     totals = repo.get("totals") or {}
     activity = repo.get("activity") or {}
     head = repo.get("head") or {}
@@ -689,7 +826,14 @@ def _repo_section(repo: dict, mode: str, scale: int, rail_style: str = "nested")
            % (_e(repo.get("path")), _e(head.get("sha")), _e(head.get("subject")),
               _e(_age(head.get("age_s")))))
     graph = _repo_mini_graph(repo, scale) if (mode == "rail" and rail_style == "graph") else ""
-    lanes = "".join(_row(l, repo, mode, scale, rail_style) for l in (repo.get("lanes") or []))
+    lane_list = list(repo.get("lanes") or [])
+    # Parent before children always (tree_ord from snapshot, fallback stable)
+    lane_list.sort(key=lambda l: (
+        l.get("_tree_ord") if l.get("_tree_ord") is not None else (
+            0 if l.get("kind") == "main" else 100),
+        l.get("name") or ""))
+    layout = _assign_graph_columns(lane_list) if mode == "rail" else {}
+    lanes = "".join(_row(l, repo, mode, scale, rail_style, layout) for l in lane_list)
     if not lanes:
         lanes = '<div class="lb-hidden-note">no lanes discovered in this repo</div>'
     # <details>, so each repo folds. Open by default; the fold layer in

@@ -1,0 +1,60 @@
+<!doctype html><html><head><meta charset=utf-8>
+<style>html,body{margin:0;background:#0E0E0D} svg{display:block;width:1400px;height:auto}</style>
+</head><body><svg viewBox="0 0 720 420" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Variant A">
+  <rect width="720" height="420" fill="#121211"/>
+  <!-- columns -->
+  <text x="48" y="28" fill="#6E6A62" font-size="10" font-family="ui-monospace,Menlo,monospace">MAIN</text>
+  <text x="140" y="28" fill="#E0A94A" font-size="10" font-family="ui-monospace,Menlo,monospace">broll-unit</text>
+  <text x="250" y="28" fill="#C4A35A" font-size="10" font-family="ui-monospace,Menlo,monospace">A/B dark</text>
+  <text x="360" y="28" fill="#6E6A62" font-size="10" font-family="ui-monospace,Menlo,monospace">A/B bigtype</text>
+  <text x="480" y="28" fill="#6E9BD6" font-size="10" font-family="ui-monospace,Menlo,monospace">reel-covers</text>
+  <text x="600" y="28" fill="#8AA8D0" font-size="10" font-family="ui-monospace,Menlo,monospace">A/B dark</text>
+  <!-- MAIN line full height -->
+  <line x1="56" y1="40" x2="56" y2="390" stroke="#C8C4B8" stroke-width="3"/>
+  <circle cx="56" cy="56" r="6" fill="#C8C4B8"/>
+  <text x="70" y="60" fill="#A5A096" font-size="11" font-family="ui-monospace,Menlo,monospace">main</text>
+
+  <!-- broll forks from main at y=100 -->
+  <path d="M56,100 C90,100 110,100 148,100" fill="none" stroke="#E0A94A" stroke-width="2.5"/>
+  <line x1="148" y1="100" x2="148" y2="340" stroke="#E0A94A" stroke-width="2.5"/>
+  <circle cx="148" cy="100" r="6" fill="#E0A94A"/>
+  <text x="162" y="104" fill="#EDEAE3" font-size="11" font-family="ui-monospace,Menlo,monospace">WORKTREE broll-unit</text>
+
+  <!-- A/B dark: vertical then merge back to broll at y=260 -->
+  <path d="M148,140 C190,140 220,140 258,140" fill="none" stroke="#C4A35A" stroke-width="2"/>
+  <line x1="258" y1="140" x2="258" y2="250" stroke="#C4A35A" stroke-width="2"/>
+  <circle cx="258" cy="140" r="5" fill="#C4A35A"/>
+  <circle cx="258" cy="190" r="4" fill="#C4A35A"/>
+  <path d="M258,250 C220,250 190,260 148,260" fill="none" stroke="#C4A35A" stroke-width="2"/>
+  <circle cx="148" cy="260" r="7" fill="#8FB04A" stroke="#121211" stroke-width="2"/>
+  <text x="270" y="144" fill="#C4A35A" font-size="10" font-family="ui-monospace,Menlo,monospace">A/B covers-dark</text>
+  <text x="162" y="248" fill="#8FB04A" font-size="10" font-family="ui-monospace,Menlo,monospace">MERGE → broll</text>
+
+  <!-- A/B bigtype: vertical then DEAD -->
+  <path d="M148,160 C220,160 300,160 368,160" fill="none" stroke="#6E6A62" stroke-width="2" stroke-dasharray="4 3"/>
+  <line x1="368" y1="160" x2="368" y2="230" stroke="#6E6A62" stroke-width="2" stroke-dasharray="4 3"/>
+  <circle cx="368" cy="160" r="4" fill="#6E6A62"/>
+  <circle cx="368" cy="200" r="4" fill="#6E6A62"/>
+  <circle cx="368" cy="230" r="5" fill="none" stroke="#E0654A" stroke-width="1.5"/>
+  <line x1="362" y1="224" x2="374" y2="236" stroke="#E0654A" stroke-width="1.5"/>
+  <line x1="374" y1="224" x2="362" y2="236" stroke="#E0654A" stroke-width="1.5"/>
+  <text x="380" y="164" fill="#6E6A62" font-size="10" font-family="ui-monospace,Menlo,monospace">A/B bigtype DEAD</text>
+
+  <!-- reel-covers worktree -->
+  <path d="M56,120 C200,120 400,120 488,120" fill="none" stroke="#6E9BD6" stroke-width="2.5"/>
+  <line x1="488" y1="120" x2="488" y2="340" stroke="#6E9BD6" stroke-width="2.5"/>
+  <circle cx="488" cy="120" r="6" fill="#6E9BD6"/>
+  <text x="502" y="124" fill="#EDEAE3" font-size="11" font-family="ui-monospace,Menlo,monospace">WORKTREE reel-covers</text>
+
+  <!-- open A/B still running on covers -->
+  <path d="M488,180 C540,180 580,180 608,180" fill="none" stroke="#8AA8D0" stroke-width="2"/>
+  <line x1="608" y1="180" x2="608" y2="300" stroke="#8AA8D0" stroke-width="2"/>
+  <circle cx="608" cy="180" r="5" fill="#8AA8D0"/>
+  <circle cx="608" cy="240" r="4" fill="#8AA8D0"/>
+  <circle cx="608" cy="300" r="5" fill="#8AA8D0"/>
+  <text x="618" y="184" fill="#8AA8D0" font-size="10" font-family="ui-monospace,Menlo,monospace">A/B open…</text>
+
+  <!-- row list hint -->
+  <rect x="40" y="360" width="640" height="40" rx="8" fill="#161615" stroke="#2C2C29"/>
+  <text x="56" y="385" fill="#A5A096" font-size="11" font-family="ui-monospace,Menlo,monospace">List rows align to nodes · many worktrees = more vertical lanes · A/B never forks MAIN</text>
+</svg></body></html>

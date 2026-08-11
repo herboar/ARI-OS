@@ -1,0 +1,218 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Lane Board · one column per worktree</title>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+<style>
+:root{
+  --bg:#0E0E0D; --card:#161615; --line:#2C2C29; --text:#EDEAE3; --muted:#A5A096;
+  --amber:#E0A94A; --blue:#6E9BD6; --olive:#8FB04A; --red:#E0654A; --gray:#6E6A62; --main:#C8C4B8;
+  --mono:ui-monospace,Menlo,Consolas,monospace;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font:14.5px/1.45 Inter,system-ui,sans-serif}
+header{max-width:1100px;margin:0 auto;padding:24px 18px 8px}
+.k{font:11px var(--mono);letter-spacing:.14em;text-transform:uppercase;color:var(--amber)}
+h1{font-size:22px;margin:8px 0 6px;letter-spacing:-.02em}
+p{color:var(--muted);max-width:68ch}
+.rule{padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:var(--card);
+  font:12.5px/1.55 var(--mono);color:var(--muted);max-width:72ch}
+.rule b{color:var(--text)}
+.wrap{max-width:1100px;margin:0 auto;padding:12px 16px 60px;display:grid;gap:20px}
+section{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px 16px 18px}
+section h2{margin:0 0 4px;font-size:14px}
+section .sub{margin:0 0 12px;font-size:12.5px;color:var(--muted)}
+.mermaid{background:#121211;border-radius:10px;padding:16px;border:1px solid var(--line)}
+.stage{background:#121211;border-radius:10px;border:1px solid var(--line);padding:12px;overflow:auto}
+.stage svg{display:block;margin:0 auto}
+.legend{display:flex;flex-wrap:wrap;gap:12px 18px;margin-top:10px;font:11px var(--mono);color:var(--muted)}
+.legend i{display:inline-block;width:14px;height:3px;border-radius:2px;vertical-align:middle;margin-right:6px}
+</style>
+</head>
+<body>
+<header>
+  <div class="k">Target visual · code-built · reviewed</div>
+  <h1>One column per worktree</h1>
+  <p>MAIN is the left spine. Each open worktree owns a vertical column. A/B tests get a thin sub-column <em>beside their parent only</em>, run down, then either merge back into that worktree column or go gray and die. No crossing the whole board.</p>
+  <div class="rule"><b>Rules</b>
+1. MAIN = one continuous vertical column
+2. Each WORKTREE = its own vertical column (many open OK)
+3. A/B = sub-column under that worktree only
+4. Winner: vertical run → rejoin parent worktree (MERGE)
+5. Loser: vertical run → gray DEAD stub (no merge)
+6. Lines never spaghetti across unrelated worktrees</div>
+</header>
+
+<div class="wrap">
+
+<section>
+  <h2>1 · Mermaid (same story)</h2>
+  <p class="sub">Readable as documentation; topology is exact.</p>
+  <pre class="mermaid">
+%%{init: {'theme':'dark', 'themeVariables': { 'primaryColor':'#E0A94A','primaryTextColor':'#EDEAE3','lineColor':'#A5A096','fontFamily':'ui-monospace'}}}%%
+gitGraph TB:
+  commit id: "main"
+  branch broll-unit
+  checkout broll-unit
+  commit id: "WORKTREE broll"
+  branch broll-dark
+  checkout broll-dark
+  commit id: "A/B dark"
+  commit id: "A/B dark 2"
+  checkout broll-unit
+  merge broll-dark id: "MERGE"
+  branch broll-bigtype
+  checkout broll-bigtype
+  commit id: "A/B bigtype"
+  commit id: "DEAD" type: REVERSE
+  checkout main
+  branch reel-covers
+  checkout reel-covers
+  commit id: "WORKTREE covers"
+  branch covers-open
+  checkout covers-open
+  commit id: "A/B open"
+  commit id: "A/B open 2"
+  </pre>
+</section>
+
+<section>
+  <h2>2 · Column graph (the real target)</h2>
+  <p class="sub">Fixed columns. Time top → bottom. A/B only lives next to its parent worktree.</p>
+  <div class="stage">
+<svg viewBox="0 0 760 440" width="760" height="440" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Column graph target">
+  <rect width="760" height="440" fill="#121211"/>
+
+  <!-- Column headers -->
+  <text x="48" y="28" fill="#6E6A62" font-size="11" font-family="ui-monospace,Menlo,monospace" text-anchor="middle">MAIN</text>
+  <text x="180" y="28" fill="#E0A94A" font-size="11" font-family="ui-monospace,Menlo,monospace" text-anchor="middle">broll-unit</text>
+  <text x="280" y="28" fill="#C4A35A" font-size="10" font-family="ui-monospace,Menlo,monospace" text-anchor="middle">A/B dark</text>
+  <text x="380" y="28" fill="#6E6A62" font-size="10" font-family="ui-monospace,Menlo,monospace" text-anchor="middle">A/B bigtype</text>
+  <text x="520" y="28" fill="#6E9BD6" font-size="11" font-family="ui-monospace,Menlo,monospace" text-anchor="middle">reel-covers</text>
+  <text x="640" y="28" fill="#8AA8D0" font-size="10" font-family="ui-monospace,Menlo,monospace" text-anchor="middle">A/B open</text>
+
+  <!-- faint column guides -->
+  <line x1="48" y1="40" x2="48" y2="400" stroke="#2C2C29" stroke-width="1"/>
+  <line x1="180" y1="40" x2="180" y2="400" stroke="#2C2C29" stroke-width="1"/>
+  <line x1="280" y1="40" x2="280" y2="400" stroke="#2C2C29" stroke-width="1"/>
+  <line x1="380" y1="40" x2="380" y2="400" stroke="#2C2C29" stroke-width="1"/>
+  <line x1="520" y1="40" x2="520" y2="400" stroke="#2C2C29" stroke-width="1"/>
+  <line x1="640" y1="40" x2="640" y2="400" stroke="#2C2C29" stroke-width="1"/>
+
+  <!-- MAIN continuous -->
+  <line x1="48" y1="48" x2="48" y2="390" stroke="#C8C4B8" stroke-width="3.5"/>
+  <circle cx="48" cy="56" r="7" fill="#C8C4B8"/>
+  <text x="62" y="60" fill="#A5A096" font-size="12" font-family="ui-monospace,Menlo,monospace">main</text>
+
+  <!-- ═══ WORKTREE broll-unit ═══ -->
+  <!-- fork from MAIN → stay in broll column -->
+  <path d="M48,100 H180" fill="none" stroke="#E0A94A" stroke-width="2.5"/>
+  <line x1="180" y1="100" x2="180" y2="360" stroke="#E0A94A" stroke-width="3"/>
+  <circle cx="180" cy="100" r="7" fill="#E0A94A"/>
+  <text x="192" y="96" fill="#EDEAE3" font-size="12" font-family="ui-monospace,Menlo,monospace">WORKTREE</text>
+
+  <!-- A/B dark: fork RIGHT into subcolumn, vertical, merge LEFT back -->
+  <path d="M180,140 H280" fill="none" stroke="#C4A35A" stroke-width="2"/>
+  <line x1="280" y1="140" x2="280" y2="230" stroke="#C4A35A" stroke-width="2.5"/>
+  <circle cx="280" cy="140" r="5" fill="#C4A35A"/>
+  <circle cx="280" cy="185" r="5" fill="#C4A35A"/>
+  <path d="M280,230 H180" fill="none" stroke="#8FB04A" stroke-width="2.5"/>
+  <circle cx="180" cy="230" r="7" fill="#8FB04A" stroke="#121211" stroke-width="2"/>
+  <text x="292" y="144" fill="#C4A35A" font-size="11" font-family="ui-monospace,Menlo,monospace">covers-dark</text>
+  <text x="192" y="218" fill="#8FB04A" font-size="11" font-family="ui-monospace,Menlo,monospace">MERGE</text>
+
+  <!-- A/B bigtype: fork RIGHT, vertical, DEAD stop (no return) -->
+  <path d="M180,160 H380" fill="none" stroke="#6E6A62" stroke-width="2" stroke-dasharray="5 4"/>
+  <line x1="380" y1="160" x2="380" y2="250" stroke="#6E6A62" stroke-width="2" stroke-dasharray="5 4"/>
+  <circle cx="380" cy="160" r="4" fill="#6E6A62"/>
+  <circle cx="380" cy="200" r="4" fill="#6E6A62"/>
+  <!-- X dead -->
+  <circle cx="380" cy="250" r="8" fill="none" stroke="#E0654A" stroke-width="1.75"/>
+  <path d="M374,244 L386,256 M386,244 L374,256" stroke="#E0654A" stroke-width="1.75"/>
+  <text x="392" y="164" fill="#6E6A62" font-size="11" font-family="ui-monospace,Menlo,monospace">bigtype</text>
+  <text x="392" y="254" fill="#E0654A" font-size="11" font-family="ui-monospace,Menlo,monospace">DEAD</text>
+
+  <!-- ═══ WORKTREE reel-covers ═══ -->
+  <path d="M48,120 H520" fill="none" stroke="#6E9BD6" stroke-width="2.5"/>
+  <line x1="520" y1="120" x2="520" y2="360" stroke="#6E9BD6" stroke-width="3"/>
+  <circle cx="520" cy="120" r="7" fill="#6E9BD6"/>
+  <text x="532" y="116" fill="#EDEAE3" font-size="12" font-family="ui-monospace,Menlo,monospace">WORKTREE</text>
+
+  <!-- A/B open under covers only -->
+  <path d="M520,180 H640" fill="none" stroke="#8AA8D0" stroke-width="2"/>
+  <line x1="640" y1="180" x2="640" y2="300" stroke="#8AA8D0" stroke-width="2.5"/>
+  <circle cx="640" cy="180" r="5" fill="#8AA8D0"/>
+  <circle cx="640" cy="240" r="5" fill="#8AA8D0"/>
+  <circle cx="640" cy="300" r="5" fill="#8AA8D0"/>
+  <text x="652" y="184" fill="#8AA8D0" font-size="11" font-family="ui-monospace,Menlo,monospace">open…</text>
+
+  <!-- bottom caption -->
+  <rect x="24" y="390" width="712" height="36" rx="8" fill="#161615" stroke="#2C2C29"/>
+  <text x="40" y="413" fill="#A5A096" font-size="12" font-family="ui-monospace,Menlo,monospace">
+    MAIN · broll column · its A/B subcolumns only · reel column · its A/B only — never cross
+  </text>
+</svg>
+  </div>
+  <div class="legend">
+    <span><i style="background:#C8C4B8"></i>MAIN</span>
+    <span><i style="background:#E0A94A"></i>worktree column</span>
+    <span><i style="background:#C4A35A"></i>A/B subcolumn → MERGE</span>
+    <span><i style="background:#6E6A62"></i>A/B subcolumn → DEAD</span>
+    <span><i style="background:#6E9BD6"></i>2nd worktree (own column)</span>
+  </div>
+</section>
+
+<section>
+  <h2>3 · Same graph, denser (board-width strip)</h2>
+  <p class="sub">What the lane board left gutter should feel like when many worktrees are open: columns pack left-to-right, not spaghetti.</p>
+  <div class="stage">
+<svg viewBox="0 0 760 280" width="760" height="280" xmlns="http://www.w3.org/2000/svg">
+  <rect width="760" height="280" fill="#121211"/>
+  <!-- MAIN -->
+  <line x1="36" y1="20" x2="36" y2="260" stroke="#C8C4B8" stroke-width="3"/>
+  <circle cx="36" cy="32" r="5" fill="#C8C4B8"/>
+  <!-- WT1 -->
+  <path d="M36,60 H100" stroke="#E0A94A" stroke-width="2.5" fill="none"/>
+  <line x1="100" y1="60" x2="100" y2="240" stroke="#E0A94A" stroke-width="2.5"/>
+  <circle cx="100" cy="60" r="5" fill="#E0A94A"/>
+  <!-- AB merge -->
+  <path d="M100,90 H150" stroke="#C4A35A" stroke-width="2" fill="none"/>
+  <line x1="150" y1="90" x2="150" y2="150" stroke="#C4A35A" stroke-width="2"/>
+  <path d="M150,150 H100" stroke="#8FB04A" stroke-width="2" fill="none"/>
+  <circle cx="100" cy="150" r="5" fill="#8FB04A"/>
+  <!-- AB dead -->
+  <path d="M100,100 H200" stroke="#6E6A62" stroke-width="1.75" fill="none" stroke-dasharray="4 3"/>
+  <line x1="200" y1="100" x2="200" y2="160" stroke="#6E6A62" stroke-width="1.75" stroke-dasharray="4 3"/>
+  <circle cx="200" cy="160" r="4" fill="none" stroke="#E0654A" stroke-width="1.5"/>
+  <!-- WT2 -->
+  <path d="M36,80 H280" stroke="#6E9BD6" stroke-width="2.5" fill="none"/>
+  <line x1="280" y1="80" x2="280" y2="240" stroke="#6E9BD6" stroke-width="2.5"/>
+  <circle cx="280" cy="80" r="5" fill="#6E9BD6"/>
+  <path d="M280,120 H340" stroke="#8AA8D0" stroke-width="2" fill="none"/>
+  <line x1="340" y1="120" x2="340" y2="200" stroke="#8AA8D0" stroke-width="2"/>
+  <circle cx="340" cy="200" r="4" fill="#8AA8D0"/>
+  <!-- WT3 alone -->
+  <path d="M36,100 H420" stroke="#8FB04A" stroke-width="2.5" fill="none"/>
+  <line x1="420" y1="100" x2="420" y2="240" stroke="#8FB04A" stroke-width="2.5"/>
+  <circle cx="420" cy="100" r="5" fill="#8FB04A"/>
+
+  <text x="36" y="270" fill="#6E6A62" font-size="10" font-family="ui-monospace,Menlo,monospace" text-anchor="middle">MAIN</text>
+  <text x="100" y="270" fill="#E0A94A" font-size="10" font-family="ui-monospace,Menlo,monospace" text-anchor="middle">WT1</text>
+  <text x="150" y="270" fill="#C4A35A" font-size="9" font-family="ui-monospace,Menlo,monospace" text-anchor="middle">A/B✓</text>
+  <text x="200" y="270" fill="#6E6A62" font-size="9" font-family="ui-monospace,Menlo,monospace" text-anchor="middle">A/B✗</text>
+  <text x="280" y="270" fill="#6E9BD6" font-size="10" font-family="ui-monospace,Menlo,monospace" text-anchor="middle">WT2</text>
+  <text x="340" y="270" fill="#8AA8D0" font-size="9" font-family="ui-monospace,Menlo,monospace" text-anchor="middle">A/B…</text>
+  <text x="420" y="270" fill="#8FB04A" font-size="10" font-family="ui-monospace,Menlo,monospace" text-anchor="middle">WT3</text>
+</svg>
+  </div>
+</section>
+
+</div>
+
+<script>
+mermaid.initialize({ startOnLoad: true, theme: 'dark', securityLevel: 'loose' });
+</script>
+</body>
+</html>

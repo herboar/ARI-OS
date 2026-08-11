@@ -1,0 +1,355 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Git graph targets · code-built · pick one</title>
+<style>
+:root{
+  --bg:#0E0E0D; --card:#161615; --line:#2C2C29; --text:#EDEAE3; --muted:#A5A096;
+  --amber:#E0A94A; --blue:#6E9BD6; --olive:#8FB04A; --red:#E0654A; --gray:#6E6A62;
+  --main:#C8C4B8; --wt1:#E0A94A; --wt2:#6E9BD6; --ab:#C4A35A;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font:14.5px/1.45 Inter,system-ui,sans-serif}
+header{max-width:1080px;margin:0 auto;padding:28px 18px 8px}
+.k{font:11px ui-monospace,Menlo,monospace;letter-spacing:.14em;text-transform:uppercase;color:var(--amber)}
+h1{font-size:24px;letter-spacing:-.03em;margin:8px 0 6px}
+.lede{color:var(--muted);max-width:70ch;margin:0 0 10px}
+.note{padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:var(--card);
+  color:var(--muted);font-size:13px;max-width:70ch}
+.note b{color:var(--text)}
+.fail{border-color:rgba(224,101,74,.4);color:#E8A090;margin-top:10px}
+.grid{max-width:1080px;margin:0 auto;padding:16px 16px 80px;display:grid;gap:18px}
+article{background:var(--card);border:1px solid var(--line);border-radius:14px;overflow:hidden}
+article .hd{display:flex;justify-content:space-between;align-items:baseline;gap:10px;
+  padding:12px 14px;border-bottom:1px solid var(--line)}
+article h2{margin:0;font-size:14px;font-weight:620}
+article .tag{font:11px ui-monospace,Menlo,monospace;color:var(--amber)}
+article .blurb{margin:0;padding:8px 14px 0;font-size:12.5px;color:var(--muted)}
+.stage{padding:8px 8px 14px}
+.stage svg{display:block;width:100%;height:auto;background:#121211;border-radius:10px;border:1px solid var(--line)}
+.legend{display:flex;flex-wrap:wrap;gap:10px 16px;padding:0 14px 14px;font:11px ui-monospace,Menlo,monospace;color:var(--muted)}
+.legend i{display:inline-block;width:18px;height:3px;border-radius:2px;vertical-align:middle;margin-right:6px}
+.foot{max-width:1080px;margin:0 auto;padding:0 18px 48px;font:13px ui-monospace,Menlo,monospace;color:var(--muted)}
+.foot b{color:var(--text)}
+</style>
+</head>
+<body>
+<header>
+  <div class="k">Code-built · reviewed · not Imagine</div>
+  <h1>Git graph targets — pick A–F</h1>
+  <p class="lede">Same story in every panel. Imagine mockups discarded after review: wrong topology, spaghetti merges, unreadable text.</p>
+  <div class="note"><b>Story (fixed):</b> MAIN continuous ↓ · two WORKTREES fork and stay vertical ·
+  under broll: A/B <b>dark</b> runs vertical then <b>merges back</b> · A/B <b>bigtype</b> runs vertical then goes <b>gray DEAD</b> ·
+  under covers: one open A/B still running. Multiple worktrees at once.</div>
+  <div class="note fail"><b>Imagine review (why those were bad):</b> lines crossed randomly, A/B didn’t rejoin parent cleanly, hierarchy unreadable, labels garbled. Not usable as a build target.</div>
+</header>
+
+<div class="grid">
+
+<!-- A classic git log --graph columns -->
+<article>
+  <div class="hd"><h2>A · Classic column graph</h2><span class="tag">#A</span></div>
+  <p class="blurb">Each lane = fixed x column. Time top→bottom. A/B gets its own column next to parent, then joins parent column (winner) or stops gray (dead).</p>
+  <div class="stage">
+<svg viewBox="0 0 720 420" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Variant A">
+  <rect width="720" height="420" fill="#121211"/>
+  <!-- columns -->
+  <text x="48" y="28" fill="#6E6A62" font-size="10" font-family="ui-monospace,Menlo,monospace">MAIN</text>
+  <text x="140" y="28" fill="#E0A94A" font-size="10" font-family="ui-monospace,Menlo,monospace">broll-unit</text>
+  <text x="250" y="28" fill="#C4A35A" font-size="10" font-family="ui-monospace,Menlo,monospace">A/B dark</text>
+  <text x="360" y="28" fill="#6E6A62" font-size="10" font-family="ui-monospace,Menlo,monospace">A/B bigtype</text>
+  <text x="480" y="28" fill="#6E9BD6" font-size="10" font-family="ui-monospace,Menlo,monospace">reel-covers</text>
+  <text x="600" y="28" fill="#8AA8D0" font-size="10" font-family="ui-monospace,Menlo,monospace">A/B dark</text>
+  <!-- MAIN line full height -->
+  <line x1="56" y1="40" x2="56" y2="390" stroke="#C8C4B8" stroke-width="3"/>
+  <circle cx="56" cy="56" r="6" fill="#C8C4B8"/>
+  <text x="70" y="60" fill="#A5A096" font-size="11" font-family="ui-monospace,Menlo,monospace">main</text>
+
+  <!-- broll forks from main at y=100 -->
+  <path d="M56,100 C90,100 110,100 148,100" fill="none" stroke="#E0A94A" stroke-width="2.5"/>
+  <line x1="148" y1="100" x2="148" y2="340" stroke="#E0A94A" stroke-width="2.5"/>
+  <circle cx="148" cy="100" r="6" fill="#E0A94A"/>
+  <text x="162" y="104" fill="#EDEAE3" font-size="11" font-family="ui-monospace,Menlo,monospace">WORKTREE broll-unit</text>
+
+  <!-- A/B dark: vertical then merge back to broll at y=260 -->
+  <path d="M148,140 C190,140 220,140 258,140" fill="none" stroke="#C4A35A" stroke-width="2"/>
+  <line x1="258" y1="140" x2="258" y2="250" stroke="#C4A35A" stroke-width="2"/>
+  <circle cx="258" cy="140" r="5" fill="#C4A35A"/>
+  <circle cx="258" cy="190" r="4" fill="#C4A35A"/>
+  <path d="M258,250 C220,250 190,260 148,260" fill="none" stroke="#C4A35A" stroke-width="2"/>
+  <circle cx="148" cy="260" r="7" fill="#8FB04A" stroke="#121211" stroke-width="2"/>
+  <text x="270" y="144" fill="#C4A35A" font-size="10" font-family="ui-monospace,Menlo,monospace">A/B covers-dark</text>
+  <text x="162" y="248" fill="#8FB04A" font-size="10" font-family="ui-monospace,Menlo,monospace">MERGE → broll</text>
+
+  <!-- A/B bigtype: vertical then DEAD -->
+  <path d="M148,160 C220,160 300,160 368,160" fill="none" stroke="#6E6A62" stroke-width="2" stroke-dasharray="4 3"/>
+  <line x1="368" y1="160" x2="368" y2="230" stroke="#6E6A62" stroke-width="2" stroke-dasharray="4 3"/>
+  <circle cx="368" cy="160" r="4" fill="#6E6A62"/>
+  <circle cx="368" cy="200" r="4" fill="#6E6A62"/>
+  <circle cx="368" cy="230" r="5" fill="none" stroke="#E0654A" stroke-width="1.5"/>
+  <line x1="362" y1="224" x2="374" y2="236" stroke="#E0654A" stroke-width="1.5"/>
+  <line x1="374" y1="224" x2="362" y2="236" stroke="#E0654A" stroke-width="1.5"/>
+  <text x="380" y="164" fill="#6E6A62" font-size="10" font-family="ui-monospace,Menlo,monospace">A/B bigtype DEAD</text>
+
+  <!-- reel-covers worktree -->
+  <path d="M56,120 C200,120 400,120 488,120" fill="none" stroke="#6E9BD6" stroke-width="2.5"/>
+  <line x1="488" y1="120" x2="488" y2="340" stroke="#6E9BD6" stroke-width="2.5"/>
+  <circle cx="488" cy="120" r="6" fill="#6E9BD6"/>
+  <text x="502" y="124" fill="#EDEAE3" font-size="11" font-family="ui-monospace,Menlo,monospace">WORKTREE reel-covers</text>
+
+  <!-- open A/B still running on covers -->
+  <path d="M488,180 C540,180 580,180 608,180" fill="none" stroke="#8AA8D0" stroke-width="2"/>
+  <line x1="608" y1="180" x2="608" y2="300" stroke="#8AA8D0" stroke-width="2"/>
+  <circle cx="608" cy="180" r="5" fill="#8AA8D0"/>
+  <circle cx="608" cy="240" r="4" fill="#8AA8D0"/>
+  <circle cx="608" cy="300" r="5" fill="#8AA8D0"/>
+  <text x="618" y="184" fill="#8AA8D0" font-size="10" font-family="ui-monospace,Menlo,monospace">A/B open…</text>
+
+  <!-- row list hint -->
+  <rect x="40" y="360" width="640" height="40" rx="8" fill="#161615" stroke="#2C2C29"/>
+  <text x="56" y="385" fill="#A5A096" font-size="11" font-family="ui-monospace,Menlo,monospace">List rows align to nodes · many worktrees = more vertical lanes · A/B never forks MAIN</text>
+</svg>
+  </div>
+  <div class="legend">
+    <span><i style="background:#C8C4B8"></i>MAIN</span>
+    <span><i style="background:#E0A94A"></i>worktree</span>
+    <span><i style="background:#C4A35A"></i>A/B live → merge</span>
+    <span><i style="background:#6E6A62"></i>A/B dead</span>
+  </div>
+</article>
+
+<!-- B denser git log --graph glyphs -->
+<article>
+  <div class="hd"><h2>B · Terminal git log --graph</h2><span class="tag">#B</span></div>
+  <p class="blurb">Same topology as A, drawn as monospaced graph characters + colored dots. Feels like the CLI; easy to implement.</p>
+  <div class="stage">
+<svg viewBox="0 0 720 420" xmlns="http://www.w3.org/2000/svg">
+  <rect width="720" height="420" fill="#121211"/>
+  <text x="40" y="36" fill="#6E6A62" font-size="11" font-family="ui-monospace,Menlo,monospace">*  main</text>
+  <circle cx="48" cy="32" r="5" fill="#C8C4B8"/>
+  <!-- simplified visual as styled pre block via foreignObject-ish: use text lines -->
+  <g font-family="ui-monospace,Menlo,monospace" font-size="13">
+    <text x="40" y="70" fill="#C8C4B8">*  main @ d94e8e8</text>
+    <text x="40" y="96" fill="#E0A94A">|\</text>
+    <text x="40" y="122" fill="#E0A94A">| *  WORKTREE broll-unit  +3</text>
+    <text x="40" y="148" fill="#C4A35A">| |\</text>
+    <text x="40" y="174" fill="#C4A35A">| | *  A/B covers-dark</text>
+    <text x="40" y="200" fill="#C4A35A">| | *</text>
+    <text x="40" y="226" fill="#8FB04A">| |/   MERGE → broll-unit</text>
+    <text x="40" y="252" fill="#6E6A62">| | *  A/B bigtype</text>
+    <text x="40" y="278" fill="#E0654A">| | x  DEAD (no merge)</text>
+    <text x="40" y="304" fill="#E0A94A">| *</text>
+    <text x="40" y="330" fill="#6E9BD6">|  \</text>
+    <text x="40" y="356" fill="#6E9BD6">|   *  WORKTREE reel-covers</text>
+    <text x="40" y="382" fill="#8AA8D0">|   |\</text>
+    <text x="40" y="408" fill="#8AA8D0">|   | *  A/B open…</text>
+  </g>
+</svg>
+  </div>
+  <div class="legend"><span>Exact parent/child in ASCII · winner = join · dead = x</span></div>
+</article>
+
+<!-- C with merge diamond and dead X, cleaner SourceTree -->
+<article>
+  <div class="hd"><h2>C · Merge diamond / dead X</h2><span class="tag">#C</span></div>
+  <p class="blurb">Vertical A/B runs; winner hits a diamond on the worktree line; dead ends with red X. No crossing spaghetti.</p>
+  <div class="stage">
+<svg viewBox="0 0 720 400" xmlns="http://www.w3.org/2000/svg">
+  <rect width="720" height="400" fill="#121211"/>
+  <!-- MAIN -->
+  <line x1="80" y1="30" x2="80" y2="370" stroke="#C8C4B8" stroke-width="4"/>
+  <circle cx="80" cy="50" r="7" fill="#C8C4B8"/>
+  <text x="96" y="54" fill="#A5A096" font-size="12" font-family="ui-monospace,Menlo,monospace">MAIN</text>
+
+  <!-- WT1 broll -->
+  <path d="M80,90 H200" stroke="#E0A94A" stroke-width="3" fill="none"/>
+  <line x1="200" y1="90" x2="200" y2="340" stroke="#E0A94A" stroke-width="3"/>
+  <circle cx="200" cy="90" r="7" fill="#E0A94A"/>
+  <text x="214" y="86" fill="#EDEAE3" font-size="12" font-family="ui-monospace,Menlo,monospace">WORKTREE · broll-unit</text>
+
+  <!-- AB win vertical -->
+  <path d="M200,130 H300" stroke="#C4A35A" stroke-width="2.5" fill="none"/>
+  <line x1="300" y1="130" x2="300" y2="220" stroke="#C4A35A" stroke-width="2.5"/>
+  <circle cx="300" cy="130" r="5" fill="#C4A35A"/>
+  <circle cx="300" cy="175" r="5" fill="#C4A35A"/>
+  <path d="M300,220 H200" stroke="#C4A35A" stroke-width="2.5" fill="none"/>
+  <!-- diamond merge -->
+  <polygon points="200,220 208,228 200,236 192,228" fill="#8FB04A"/>
+  <text x="314" y="134" fill="#C4A35A" font-size="11" font-family="ui-monospace,Menlo,monospace">A/B dark</text>
+  <text x="214" y="210" fill="#8FB04A" font-size="11" font-family="ui-monospace,Menlo,monospace">MERGE</text>
+
+  <!-- AB dead vertical -->
+  <path d="M200,150 H400" stroke="#6E6A62" stroke-width="2" fill="none" stroke-dasharray="5 4"/>
+  <line x1="400" y1="150" x2="400" y2="240" stroke="#6E6A62" stroke-width="2" stroke-dasharray="5 4"/>
+  <circle cx="400" cy="150" r="4" fill="#6E6A62"/>
+  <circle cx="400" cy="195" r="4" fill="#6E6A62"/>
+  <circle cx="400" cy="240" r="8" fill="none" stroke="#E0654A" stroke-width="2"/>
+  <text x="395" y="244" fill="#E0654A" font-size="12" font-family="ui-monospace,Menlo,monospace" text-anchor="middle">✕</text>
+  <text x="414" y="154" fill="#6E6A62" font-size="11" font-family="ui-monospace,Menlo,monospace">A/B bigtype DEAD</text>
+
+  <!-- WT2 -->
+  <path d="M80,110 H520" stroke="#6E9BD6" stroke-width="3" fill="none"/>
+  <line x1="520" y1="110" x2="520" y2="340" stroke="#6E9BD6" stroke-width="3"/>
+  <circle cx="520" cy="110" r="7" fill="#6E9BD6"/>
+  <text x="534" y="106" fill="#EDEAE3" font-size="12" font-family="ui-monospace,Menlo,monospace">WORKTREE · reel-covers</text>
+  <path d="M520,170 H620" stroke="#8AA8D0" stroke-width="2.5" fill="none"/>
+  <line x1="620" y1="170" x2="620" y2="280" stroke="#8AA8D0" stroke-width="2.5"/>
+  <circle cx="620" cy="170" r="5" fill="#8AA8D0"/>
+  <circle cx="620" cy="225" r="5" fill="#8AA8D0"/>
+  <circle cx="620" cy="280" r="5" fill="#8AA8D0"/>
+  <text x="634" y="174" fill="#8AA8D0" font-size="11" font-family="ui-monospace,Menlo,monospace">A/B open</text>
+</svg>
+  </div>
+</article>
+
+<!-- D split panel graph + list -->
+<article>
+  <div class="hd"><h2>D · Graph + list (GitKraken-like)</h2><span class="tag">#D</span></div>
+  <p class="blurb">Left = pure vertical lanes (same as A). Right = row list ordered MAIN → worktree → children. Sort always parent-before-child.</p>
+  <div class="stage">
+<svg viewBox="0 0 720 400" xmlns="http://www.w3.org/2000/svg">
+  <rect width="720" height="400" fill="#121211"/>
+  <!-- left graph 280px -->
+  <line x1="40" y1="40" x2="40" y2="360" stroke="#C8C4B8" stroke-width="3"/>
+  <circle cx="40" cy="56" r="6" fill="#C8C4B8"/>
+  <path d="M40,100 H100" stroke="#E0A94A" stroke-width="2.5" fill="none"/>
+  <line x1="100" y1="100" x2="100" y2="320" stroke="#E0A94A" stroke-width="2.5"/>
+  <circle cx="100" cy="100" r="6" fill="#E0A94A"/>
+  <path d="M100,140 H160" stroke="#C4A35A" stroke-width="2" fill="none"/>
+  <line x1="160" y1="140" x2="160" y2="220" stroke="#C4A35A" stroke-width="2"/>
+  <path d="M160,220 H100" stroke="#C4A35A" stroke-width="2" fill="none"/>
+  <circle cx="100" cy="220" r="6" fill="#8FB04A"/>
+  <path d="M100,160 H200" stroke="#6E6A62" stroke-width="2" fill="none" stroke-dasharray="4 3"/>
+  <line x1="200" y1="160" x2="200" y2="240" stroke="#6E6A62" stroke-width="2" stroke-dasharray="4 3"/>
+  <circle cx="200" cy="240" r="5" fill="none" stroke="#E0654A" stroke-width="1.5"/>
+  <path d="M40,120 H240" stroke="#6E9BD6" stroke-width="2.5" fill="none"/>
+  <line x1="240" y1="120" x2="240" y2="320" stroke="#6E9BD6" stroke-width="2.5"/>
+  <circle cx="240" cy="120" r="6" fill="#6E9BD6"/>
+  <path d="M240,180 H280" stroke="#8AA8D0" stroke-width="2" fill="none"/>
+  <line x1="280" y1="180" x2="280" y2="280" stroke="#8AA8D0" stroke-width="2"/>
+
+  <!-- divider -->
+  <line x1="310" y1="30" x2="310" y2="370" stroke="#2C2C29" stroke-width="1"/>
+
+  <!-- list -->
+  <g font-family="ui-monospace,Menlo,monospace" font-size="12">
+    <text x="330" y="60" fill="#C8C4B8">MAIN · main</text>
+    <text x="330" y="100" fill="#E0A94A">WORKTREE · broll-unit</text>
+    <text x="350" y="140" fill="#C4A35A">A/B · covers-dark → merges</text>
+    <text x="350" y="180" fill="#6E6A62">A/B · bigtype · DEAD</text>
+    <text x="330" y="230" fill="#6E9BD6">WORKTREE · reel-covers</text>
+    <text x="350" y="270" fill="#8AA8D0">A/B · open…</text>
+    <text x="330" y="320" fill="#A5A096" font-size="11">Parent always above children</text>
+  </g>
+  <!-- connector dots aligning -->
+  <circle cx="100" cy="100" r="3" fill="#E0A94A"/>
+  <line x1="100" y1="100" x2="310" y2="100" stroke="#2C2C29" stroke-dasharray="2 3"/>
+</svg>
+  </div>
+</article>
+
+<!-- E compact single-column tree with vertical AB sidecar -->
+<article>
+  <div class="hd"><h2>E · Compact sidecar lanes</h2><span class="tag">#E</span></div>
+  <p class="blurb">MAIN + worktrees share a tight stack. A/B only opens a temporary vertical sidecar that collapses on merge or dies beside parent.</p>
+  <div class="stage">
+<svg viewBox="0 0 720 380" xmlns="http://www.w3.org/2000/svg">
+  <rect width="720" height="380" fill="#121211"/>
+  <line x1="120" y1="30" x2="120" y2="350" stroke="#C8C4B8" stroke-width="3"/>
+  <circle cx="120" cy="50" r="6" fill="#C8C4B8"/>
+  <text x="140" y="54" fill="#A5A096" font-size="12" font-family="ui-monospace,Menlo,monospace">MAIN</text>
+
+  <!-- worktrees stacked on same visual "family" but offset -->
+  <path d="M120,90 H200" stroke="#E0A94A" stroke-width="3" fill="none"/>
+  <line x1="200" y1="90" x2="200" y2="300" stroke="#E0A94A" stroke-width="3"/>
+  <circle cx="200" cy="90" r="7" fill="#E0A94A"/>
+  <text x="220" y="94" fill="#EDEAE3" font-size="13" font-family="ui-monospace,Menlo,monospace">WORKTREE broll-unit</text>
+
+  <!-- sidecar AB win: small vertical then back -->
+  <rect x="248" y="120" width="90" height="110" rx="8" fill="#1A1814" stroke="#3A3428"/>
+  <text x="258" y="138" fill="#C4A35A" font-size="10" font-family="ui-monospace,Menlo,monospace">A/B sidecar</text>
+  <line x1="290" y1="150" x2="290" y2="210" stroke="#C4A35A" stroke-width="2.5"/>
+  <circle cx="290" cy="155" r="4" fill="#C4A35A"/>
+  <circle cx="290" cy="185" r="4" fill="#C4A35A"/>
+  <path d="M290,210 Q250,220 200,220" fill="none" stroke="#8FB04A" stroke-width="2.5"/>
+  <circle cx="200" cy="220" r="6" fill="#8FB04A"/>
+  <text x="348" y="190" fill="#8FB04A" font-size="11" font-family="ui-monospace,Menlo,monospace">merge</text>
+
+  <!-- sidecar dead -->
+  <rect x="248" y="240" width="90" height="70" rx="8" fill="#181616" stroke="#333"/>
+  <line x1="290" y1="255" x2="290" y2="290" stroke="#6E6A62" stroke-width="2" stroke-dasharray="4 3"/>
+  <circle cx="290" cy="290" r="5" fill="none" stroke="#E0654A" stroke-width="1.5"/>
+  <text x="348" y="275" fill="#6E6A62" font-size="11" font-family="ui-monospace,Menlo,monospace">DEAD</text>
+
+  <!-- second worktree -->
+  <path d="M120,110 H480" stroke="#6E9BD6" stroke-width="3" fill="none"/>
+  <line x1="480" y1="110" x2="480" y2="300" stroke="#6E9BD6" stroke-width="3"/>
+  <circle cx="480" cy="110" r="7" fill="#6E9BD6"/>
+  <text x="500" y="114" fill="#EDEAE3" font-size="13" font-family="ui-monospace,Menlo,monospace">WORKTREE reel-covers</text>
+  <rect x="528" y="150" width="90" height="90" rx="8" fill="#141820" stroke="#2A3545"/>
+  <line x1="570" y1="170" x2="570" y2="220" stroke="#8AA8D0" stroke-width="2.5"/>
+  <circle cx="570" cy="175" r="4" fill="#8AA8D0"/>
+  <circle cx="570" cy="210" r="4" fill="#8AA8D0"/>
+  <text x="628" y="200" fill="#8AA8D0" font-size="11" font-family="ui-monospace,Menlo,monospace">A/B open</text>
+</svg>
+  </div>
+</article>
+
+<!-- F timeline with explicit phases -->
+<article>
+  <div class="hd"><h2>F · Lifecycle phases on vertical A/B</h2><span class="tag">#F</span></div>
+  <p class="blurb">Same graph as C, plus phase labels on the A/B lane: FORK → RUN → MERGE|DEAD. Makes the story explicit for agents + humans.</p>
+  <div class="stage">
+<svg viewBox="0 0 720 400" xmlns="http://www.w3.org/2000/svg">
+  <rect width="720" height="400" fill="#121211"/>
+  <line x1="70" y1="40" x2="70" y2="360" stroke="#C8C4B8" stroke-width="3"/>
+  <circle cx="70" cy="55" r="6" fill="#C8C4B8"/>
+  <text x="86" y="59" fill="#A5A096" font-size="12" font-family="ui-monospace,Menlo,monospace">MAIN</text>
+
+  <path d="M70,100 H180" stroke="#E0A94A" stroke-width="3" fill="none"/>
+  <line x1="180" y1="100" x2="180" y2="340" stroke="#E0A94A" stroke-width="3"/>
+  <circle cx="180" cy="100" r="7" fill="#E0A94A"/>
+  <text x="196" y="96" fill="#EDEAE3" font-size="12" font-family="ui-monospace,Menlo,monospace">WORKTREE</text>
+
+  <!-- winner lifecycle -->
+  <path d="M180,130 H320" stroke="#C4A35A" stroke-width="2.5" fill="none"/>
+  <line x1="320" y1="130" x2="320" y2="250" stroke="#C4A35A" stroke-width="2.5"/>
+  <circle cx="320" cy="130" r="5" fill="#C4A35A"/>
+  <text x="334" y="124" fill="#C4A35A" font-size="10" font-family="ui-monospace,Menlo,monospace">1 FORK</text>
+  <circle cx="320" cy="180" r="5" fill="#C4A35A"/>
+  <text x="334" y="184" fill="#C4A35A" font-size="10" font-family="ui-monospace,Menlo,monospace">2 RUN (vertical)</text>
+  <path d="M320,250 H180" stroke="#8FB04A" stroke-width="2.5" fill="none"/>
+  <circle cx="180" cy="250" r="7" fill="#8FB04A"/>
+  <text x="196" y="254" fill="#8FB04A" font-size="10" font-family="ui-monospace,Menlo,monospace">3 MERGE → parent worktree</text>
+
+  <!-- dead lifecycle -->
+  <path d="M180,150 H420" stroke="#6E6A62" stroke-width="2" fill="none" stroke-dasharray="4 3"/>
+  <line x1="420" y1="150" x2="420" y2="260" stroke="#6E6A62" stroke-width="2" stroke-dasharray="4 3"/>
+  <circle cx="420" cy="150" r="4" fill="#6E6A62"/>
+  <text x="434" y="144" fill="#6E6A62" font-size="10" font-family="ui-monospace,Menlo,monospace">1 FORK</text>
+  <circle cx="420" cy="200" r="4" fill="#6E6A62"/>
+  <text x="434" y="204" fill="#6E6A62" font-size="10" font-family="ui-monospace,Menlo,monospace">2 RUN</text>
+  <circle cx="420" cy="260" r="6" fill="none" stroke="#E0654A" stroke-width="1.5"/>
+  <text x="414" y="264" fill="#E0654A" font-size="11" text-anchor="middle">✕</text>
+  <text x="434" y="264" fill="#E0654A" font-size="10" font-family="ui-monospace,Menlo,monospace">3 DEAD (never merges)</text>
+
+  <!-- second worktree simple -->
+  <path d="M70,120 H560" stroke="#6E9BD6" stroke-width="3" fill="none"/>
+  <line x1="560" y1="120" x2="560" y2="340" stroke="#6E9BD6" stroke-width="3"/>
+  <circle cx="560" cy="120" r="7" fill="#6E9BD6"/>
+  <text x="574" y="116" fill="#EDEAE3" font-size="12" font-family="ui-monospace,Menlo,monospace">WORKTREE (2nd open)</text>
+  <path d="M560,180 H640" stroke="#8AA8D0" stroke-width="2" fill="none"/>
+  <line x1="640" y1="180" x2="640" y2="300" stroke="#8AA8D0" stroke-width="2"/>
+  <circle cx="640" cy="180" r="5" fill="#8AA8D0"/>
+  <text x="654" y="184" fill="#8AA8D0" font-size="10" font-family="ui-monospace,Menlo,monospace">A/B RUN…</text>
+</svg>
+  </div>
+</article>
+
+</div>
+
+<p class="foot">Reply with <b>#A</b> … <b>#F</b> (or hybrid, e.g. <b>#C diamonds + #D list</b>). That is the build target — Imagine set is discarded.</p>
+</body>
+</html>

@@ -172,6 +172,7 @@ summary.lb-repo-head:hover .lb-repo-name{color:var(--text);}
    CSS spine only used for legacy nested style. */
 .lb-railcell{position:relative;width:96px;align-self:stretch;display:flex;align-items:center;}
 .lb-railcell.lb-rail-hierarchy{width:128px;min-width:128px;}
+.lb-railcell.lb-rail-cols{width:auto;min-width:96px;max-width:280px;}
 .lb-railcell:not(.lb-rail-hierarchy)::before{content:"";position:absolute;left:23px;top:0;bottom:0;width:2px;
   background:var(--line);}
 .lb-lanes>.lb-row:first-child .lb-railcell:not(.lb-rail-hierarchy)::before{top:50%;}
@@ -266,7 +267,7 @@ summary.lb-repo-head:hover .lb-repo-name{color:var(--text);}
   grid-template-columns:minmax(96px,140px) minmax(200px,1fr) auto auto auto 14px;padding:0 10px 0 0;gap:14px;
   min-height:64px;border-left:0;border-radius:9px;}
 .lb-view[data-v="rail"][data-rail-style="elbow"] .lb-row>summary{
-  grid-template-columns:128px minmax(200px,1fr) auto auto auto 14px;}
+  grid-template-columns:minmax(96px,280px) minmax(200px,1fr) auto auto auto 14px;}
 .lb-view[data-v="rail"][data-rail-style="graph"] .lb-row>summary{
   grid-template-columns:48px minmax(200px,1fr) auto auto auto 14px;}
 .lb-view[data-v="rail"] .lb-row>summary .lb-actors{margin-top:3px;}
@@ -298,7 +299,7 @@ summary.lb-repo-head:hover .lb-repo-name{color:var(--text);}
 BOARD_JS = """
 (function(){
   var K={view:'lbView',rail:'lbRail',density:'lbDensity',sort:'lbSort',clean:'lbClean',theme:'lbTheme'};
-  var D={view:'dense',rail:'elbow',density:'comfortable',sort:'tree',clean:'show',theme:'dark'};
+  var D={view:'rail',rail:'elbow',density:'comfortable',sort:'tree',clean:'show',theme:'dark'};
   function get(k){try{var v=localStorage.getItem(K[k]);return v===null?D[k]:v}catch(e){return D[k]}}
   function set(k,v){try{localStorage.setItem(K[k],v)}catch(e){}}
   function each(sel,root,fn){

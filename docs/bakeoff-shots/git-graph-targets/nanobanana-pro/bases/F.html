@@ -1,0 +1,45 @@
+<!doctype html><html><head><meta charset=utf-8>
+<style>html,body{margin:0;background:#0E0E0D} svg{display:block;width:1400px;height:auto}</style>
+</head><body><svg viewBox="0 0 720 400" xmlns="http://www.w3.org/2000/svg">
+  <rect width="720" height="400" fill="#121211"/>
+  <line x1="70" y1="40" x2="70" y2="360" stroke="#C8C4B8" stroke-width="3"/>
+  <circle cx="70" cy="55" r="6" fill="#C8C4B8"/>
+  <text x="86" y="59" fill="#A5A096" font-size="12" font-family="ui-monospace,Menlo,monospace">MAIN</text>
+
+  <path d="M70,100 H180" stroke="#E0A94A" stroke-width="3" fill="none"/>
+  <line x1="180" y1="100" x2="180" y2="340" stroke="#E0A94A" stroke-width="3"/>
+  <circle cx="180" cy="100" r="7" fill="#E0A94A"/>
+  <text x="196" y="96" fill="#EDEAE3" font-size="12" font-family="ui-monospace,Menlo,monospace">WORKTREE</text>
+
+  <!-- winner lifecycle -->
+  <path d="M180,130 H320" stroke="#C4A35A" stroke-width="2.5" fill="none"/>
+  <line x1="320" y1="130" x2="320" y2="250" stroke="#C4A35A" stroke-width="2.5"/>
+  <circle cx="320" cy="130" r="5" fill="#C4A35A"/>
+  <text x="334" y="124" fill="#C4A35A" font-size="10" font-family="ui-monospace,Menlo,monospace">1 FORK</text>
+  <circle cx="320" cy="180" r="5" fill="#C4A35A"/>
+  <text x="334" y="184" fill="#C4A35A" font-size="10" font-family="ui-monospace,Menlo,monospace">2 RUN (vertical)</text>
+  <path d="M320,250 H180" stroke="#8FB04A" stroke-width="2.5" fill="none"/>
+  <circle cx="180" cy="250" r="7" fill="#8FB04A"/>
+  <text x="196" y="254" fill="#8FB04A" font-size="10" font-family="ui-monospace,Menlo,monospace">3 MERGE → parent worktree</text>
+
+  <!-- dead lifecycle -->
+  <path d="M180,150 H420" stroke="#6E6A62" stroke-width="2" fill="none" stroke-dasharray="4 3"/>
+  <line x1="420" y1="150" x2="420" y2="260" stroke="#6E6A62" stroke-width="2" stroke-dasharray="4 3"/>
+  <circle cx="420" cy="150" r="4" fill="#6E6A62"/>
+  <text x="434" y="144" fill="#6E6A62" font-size="10" font-family="ui-monospace,Menlo,monospace">1 FORK</text>
+  <circle cx="420" cy="200" r="4" fill="#6E6A62"/>
+  <text x="434" y="204" fill="#6E6A62" font-size="10" font-family="ui-monospace,Menlo,monospace">2 RUN</text>
+  <circle cx="420" cy="260" r="6" fill="none" stroke="#E0654A" stroke-width="1.5"/>
+  <text x="414" y="264" fill="#E0654A" font-size="11" text-anchor="middle">✕</text>
+  <text x="434" y="264" fill="#E0654A" font-size="10" font-family="ui-monospace,Menlo,monospace">3 DEAD (never merges)</text>
+
+  <!-- second worktree simple -->
+  <path d="M70,120 H560" stroke="#6E9BD6" stroke-width="3" fill="none"/>
+  <line x1="560" y1="120" x2="560" y2="340" stroke="#6E9BD6" stroke-width="3"/>
+  <circle cx="560" cy="120" r="7" fill="#6E9BD6"/>
+  <text x="574" y="116" fill="#EDEAE3" font-size="12" font-family="ui-monospace,Menlo,monospace">WORKTREE (2nd open)</text>
+  <path d="M560,180 H640" stroke="#8AA8D0" stroke-width="2" fill="none"/>
+  <line x1="640" y1="180" x2="640" y2="300" stroke="#8AA8D0" stroke-width="2"/>
+  <circle cx="640" cy="180" r="5" fill="#8AA8D0"/>
+  <text x="654" y="184" fill="#8AA8D0" font-size="10" font-family="ui-monospace,Menlo,monospace">A/B RUN…</text>
+</svg></body></html>
