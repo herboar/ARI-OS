@@ -29,7 +29,7 @@ git worktree add .claude/worktrees/broll-editor -b agent/broll-editor agent/brol
   echo del >> editor-ux.md && git add editor-ux.md && git commit -m "editor: delete slide"
   echo sync >> editor-ux.md && git add editor-ux.md && git commit -m "editor: sync"
 )
-git worktree add .claude/worktrees/reel-covers -b agent/reel-covers
+git worktree add .claude/worktrees/reel-covers -b agent/reel-covers agent/broll-unit
 ( cd .claude/worktrees/reel-covers
   echo plate > covers.md && git add covers.md && git commit -m "covers: plate"
   echo type >> covers.md && git add covers.md && git commit -m "covers: typography"
@@ -58,7 +58,7 @@ if [[ ! -f .claude/agent-lanes.json ]]; then
  {"branch":"agent/broll-unit","parent":"main","role":"feature","note":"FEATURE · open b-roll unit — linear home for related work"},
  {"branch":"agent/broll-dp2","parent":"agent/broll-unit","role":"variant","note":"VARIANT of broll · GIF backgrounds — merge to broll, not main"},
  {"branch":"agent/broll-editor","parent":"agent/broll-unit","role":"variant","note":"VARIANT of broll · slide editor UX — merge to broll, not main"},
- {"branch":"agent/reel-covers","parent":"main","role":"feature","note":"FEATURE · reel covers product surface"},
+ {"branch":"agent/reel-covers","parent":"agent/broll-unit","role":"feature","note":"WORKTREE under b-roll unit (not off main)"},
  {"branch":"agent/covers-dark","parent":"agent/reel-covers","role":"variant","note":"A/B of reel-covers · dark plates — merge to reel-covers"},
  {"branch":"agent/covers-bigtype","parent":"agent/reel-covers","role":"variant","route_status":"dead_route","note":"DEAD route · bigger type discarded — will not merge"},
  {"branch":"agent/script-parked","parent":"main","role":"feature","note":"PARKED 2026-08-04 · independent of broll line"}

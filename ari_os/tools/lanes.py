@@ -429,13 +429,24 @@ def _apply_lineage(ctx: _Ctx, repo: dict, lanes: list, meta: dict) -> None:
             main_l = next((l for l in lanes if l.get("kind") == "main"), None)
             target_lane_id = main_l["id"] if main_l else None
 
-        # Variants integrate to parent; features to main/base
-        if role == "variant" and parent_lane and parent_lane.get("kind") != "main":
+        # Merge target is data-driven: parent of the lane (fork parent), or
+        # main/base when parent is main / missing. Never hardcode "features → main"
+        # when a nested worktree's parent is another worktree — the graph shows
+        # whatever this points at.
+        if parent_lane and parent_lane.get("kind") != "main":
             target_branch = parent_lane.get("branch") or p_ref
+            target_lane_id = parent_lane["id"]
         else:
             target_branch = base
             main_l = next((l for l in lanes if l.get("kind") == "main"), None)
             target_lane_id = main_l["id"] if main_l else target_lane_id
+
+        # Optional override from agent-lanes / dispatch: integration_target / merge_into
+        # (already on meta if present)
+        override = None
+        if isinstance(m, dict):
+            override = m.get("integration_target") or m.get("merge_into")
+        # workers can also declare later; snapshot uses parent by default
 
         lane["integration"] = {
             "target_branch": target_branch,
@@ -508,12 +519,13 @@ def _apply_lineage(ctx: _Ctx, repo: dict, lanes: list, meta: dict) -> None:
         if not lane.get("parent_id"):
             if lane.get("role") == "variant":
                 lane["role"] = "feature"
-            # integration target for features is always base
+            # Off main (or no parent): integrate to base/main
             integ = lane.setdefault("integration", {})
             integ["target_branch"] = base
             main_l = next((l for l in ordered if l.get("kind") == "main"), None)
             if main_l:
                 integ["target_lane_id"] = main_l["id"]
+        # Nested lanes keep integration.target_* from the parent-based assignment above
     lanes[:] = ordered
 
 

@@ -1,0 +1,160 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Locked · Excalidraw topology (corrected)</title>
+<style>
+:root{--bg:#0E0E0D;--card:#161615;--line:#2C2C29;--text:#EDEAE3;--muted:#A5A096;
+  --mono:ui-monospace,Menlo,monospace}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font:15px/1.45 Inter,system-ui,sans-serif}
+header{max-width:780px;margin:0 auto;padding:24px 18px 8px}
+.k{font:11px var(--mono);letter-spacing:.14em;text-transform:uppercase;color:#E0A94A}
+h1{font-size:22px;margin:8px 0 8px}
+p{color:var(--muted);max-width:62ch}
+.fix{padding:10px 12px;border-radius:10px;border:1px solid rgba(224,169,74,.4);
+  background:rgba(224,169,74,.1);color:#E0C070;font-size:13px;max-width:62ch}
+.fix b{color:#EDEAE3}
+.tree{margin:12px 0 0;padding:12px 14px;background:var(--card);border:1px solid var(--line);
+  border-radius:12px;font:12.5px/1.55 var(--mono);color:var(--muted);white-space:pre}
+.tree b{color:var(--text)}.tree .g{color:#5BA85A}.tree .b{color:#4A7FD4}.tree .d{color:#888}
+.stage{max-width:780px;margin:16px auto 48px;padding:0 16px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px}
+svg{display:block;width:100%;height:auto;background:#FAFAF8;border-radius:12px}
+.note{margin-top:12px;font-size:13px;color:var(--muted)}
+</style>
+</head>
+<body>
+<header>
+  <div class="k">Corrected · reel-covers is under b-roll, not main</div>
+  <h1>Your Excalidraw topology</h1>
+  <p class="fix"><b>Fix:</b> reel-covers forks from the <b>b-roll unit worktree</b> column — not from main. Only b-roll forks from main; everything else hangs under that line of work (or under its own worktree if you open an independent one later).</p>
+  <div class="tree"><b>main</b>
+ └── <span class="g">b-roll unit</span>          WORKTREE (off main)
+      ├── <span class="g">a</span>                 A/B → merge into b-roll
+      ├── <span class="d">b</span>                 A/B → dead
+      └── <span class="b">reel-covers</span>      WORKTREE (off b-roll, not main)
+           ├── … A/B kids …
+           ├── dead / merge into reel-covers
+           └── merge → b-roll
+      └── merge → main</div>
+</header>
+
+<div class="stage">
+  <div class="card">
+    <svg viewBox="0 0 560 540" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Corrected Excalidraw topology">
+      <rect width="560" height="540" fill="#FAFAF8"/>
+      <defs>
+        <pattern id="hatch" patternUnits="userSpaceOnUse" width="6" height="6" patternTransform="rotate(45)">
+          <line x1="0" y1="0" x2="0" y2="6" stroke="#E0654A" stroke-width="2"/>
+        </pattern>
+      </defs>
+
+      <!-- MAIN x=70 -->
+      <line x1="70" y1="36" x2="70" y2="510" stroke="#E0654A" stroke-width="3"/>
+      <circle cx="70" cy="44" r="12" fill="#E0654A"/>
+      <text x="90" y="49" fill="#E0654A" font-size="15" font-family="Inter,system-ui" font-weight="600">main</text>
+
+      <!-- main progressed while worktrees open (behind markers) -->
+      <circle cx="70" cy="150" r="11" fill="#FAFAF8" stroke="#E0654A" stroke-width="2.5"/>
+      <circle cx="70" cy="150" r="11" fill="url(#hatch)" opacity=".9"/>
+      <circle cx="70" cy="230" r="11" fill="#FAFAF8" stroke="#E0654A" stroke-width="2.5"/>
+      <circle cx="70" cy="230" r="11" fill="url(#hatch)" opacity=".9"/>
+      <circle cx="70" cy="340" r="11" fill="#FAFAF8" stroke="#E0654A" stroke-width="2.5"/>
+      <circle cx="70" cy="340" r="11" fill="url(#hatch)" opacity=".9"/>
+      <text x="12" y="200" fill="#E0654A" font-size="11" font-family="Inter,system-ui">
+        <tspan x="12" dy="0">main moved</tspan>
+        <tspan x="12" dy="13">while WT open</tspan>
+        <tspan x="12" dy="13">= behind</tspan>
+      </text>
+
+      <!-- ═══ b-roll unit WORKTREE x=190  (only this forks from MAIN) ═══ -->
+      <path d="M70,95 H190" fill="none" stroke="#5BA85A" stroke-width="2.75"/>
+      <line x1="190" y1="95" x2="190" y2="470" stroke="#5BA85A" stroke-width="3.25"/>
+      <circle cx="190" cy="95" r="12" fill="#5BA85A"/>
+      <text x="208" y="91" fill="#5BA85A" font-size="14" font-family="Inter,system-ui" font-weight="600">b-roll unit</text>
+      <text x="208" y="107" fill="#5BA85A" font-size="12" font-family="Inter,system-ui">worktree (off main)</text>
+
+      <circle cx="190" cy="145" r="9" fill="#5BA85A"/>
+      <circle cx="190" cy="195" r="9" fill="#5BA85A"/>
+
+      <!-- A/B a under b-roll x=140 -->
+      <path d="M190,130 H140" fill="none" stroke="#5BA85A" stroke-width="2"/>
+      <line x1="140" y1="130" x2="140" y2="250" stroke="#5BA85A" stroke-width="2.5"/>
+      <circle cx="140" cy="130" r="7" fill="#5BA85A"/>
+      <circle cx="140" cy="185" r="7" fill="#5BA85A"/>
+      <text x="128" y="126" fill="#5BA85A" font-size="13" font-family="Inter,system-ui" text-anchor="end">a</text>
+      <path d="M140,250 H190" fill="none" stroke="#5BA85A" stroke-width="2.5"/>
+      <circle cx="190" cy="250" r="11" fill="#5BA85A"/>
+      <text x="202" y="246" fill="#5BA85A" font-size="12" font-family="Inter,system-ui">merge → b-roll</text>
+
+      <!-- A/B b dead under b-roll x=240 -->
+      <path d="M190,130 H240" fill="none" stroke="#9A9A9A" stroke-width="2"/>
+      <line x1="240" y1="130" x2="240" y2="250" stroke="#9A9A9A" stroke-width="2"/>
+      <circle cx="240" cy="130" r="7" fill="#B0B0B0"/>
+      <circle cx="240" cy="185" r="7" fill="#B0B0B0"/>
+      <text x="252" y="126" fill="#888" font-size="13" font-family="Inter,system-ui">b</text>
+      <circle cx="240" cy="250" r="10" fill="#FAFAF8" stroke="#888" stroke-width="2"/>
+      <path d="M233,243 L247,257 M247,243 L233,257" stroke="#666" stroke-width="2"/>
+      <text x="252" y="254" fill="#666" font-size="12" font-family="Inter,system-ui">dead</text>
+
+      <circle cx="190" cy="300" r="9" fill="#5BA85A"/>
+
+      <!-- ═══ reel-covers WORKTREE x=360 — forks from b-roll (190), NOT from main ═══ -->
+      <path d="M190,165 H360" fill="none" stroke="#4A7FD4" stroke-width="2.75"/>
+      <line x1="360" y1="165" x2="360" y2="430" stroke="#4A7FD4" stroke-width="3.25"/>
+      <circle cx="360" cy="165" r="12" fill="#4A7FD4"/>
+      <text x="378" y="161" fill="#4A7FD4" font-size="14" font-family="Inter,system-ui" font-weight="600">reel-covers</text>
+      <text x="378" y="177" fill="#4A7FD4" font-size="12" font-family="Inter,system-ui">worktree (off b-roll ✓)</text>
+
+      <circle cx="360" cy="210" r="8" fill="#4A7FD4"/>
+      <circle cx="360" cy="245" r="8" fill="#4A7FD4"/>
+
+      <!-- A/B under reel only -->
+      <path d="M360,235 H300" fill="none" stroke="#4A7FD4" stroke-width="2"/>
+      <line x1="300" y1="235" x2="300" y2="320" stroke="#4A7FD4" stroke-width="2"/>
+      <circle cx="300" cy="235" r="6" fill="#4A7FD4"/>
+      <circle cx="300" cy="275" r="6" fill="#4A7FD4"/>
+      <circle cx="300" cy="320" r="6" fill="#4A7FD4"/>
+      <!-- merge a-like into reel -->
+      <path d="M300,340 H360" fill="none" stroke="#5BA85A" stroke-width="2"/>
+      <circle cx="360" cy="340" r="10" fill="#4A7FD4"/>
+      <text x="372" y="336" fill="#5BA85A" font-size="12" font-family="Inter,system-ui">merge → reel</text>
+
+      <path d="M360,235 H420" fill="none" stroke="#4A7FD4" stroke-width="2"/>
+      <line x1="420" y1="235" x2="420" y2="300" stroke="#4A7FD4" stroke-width="2"/>
+      <circle cx="420" cy="235" r="6" fill="#4A7FD4"/>
+      <circle cx="420" cy="270" r="6" fill="#4A7FD4"/>
+      <circle cx="420" cy="300" r="9" fill="#FAFAF8" stroke="#888" stroke-width="1.5"/>
+      <path d="M414,294 L426,306 M426,294 L414,306" stroke="#666" stroke-width="1.5"/>
+      <text x="430" y="304" fill="#666" font-size="11" font-family="Inter,system-ui">dead</text>
+
+      <path d="M360,235 H480" fill="none" stroke="#4A7FD4" stroke-width="2"/>
+      <line x1="480" y1="235" x2="480" y2="285" stroke="#4A7FD4" stroke-width="2"/>
+      <circle cx="480" cy="235" r="6" fill="#4A7FD4"/>
+      <circle cx="480" cy="260" r="6" fill="#4A7FD4"/>
+      <circle cx="480" cy="285" r="9" fill="#FAFAF8" stroke="#888" stroke-width="1.5"/>
+      <path d="M474,279 L486,291 M486,279 L474,291" stroke="#666" stroke-width="1.5"/>
+      <text x="490" y="289" fill="#666" font-size="11" font-family="Inter,system-ui">dead</text>
+
+      <!-- reel merges BACK to b-roll (parent worktree), not to main -->
+      <path d="M360,430 H190" fill="none" stroke="#4A7FD4" stroke-width="2.5"/>
+      <circle cx="360" cy="430" r="11" fill="#4A7FD4"/>
+      <circle cx="190" cy="430" r="11" fill="#4A7FD4"/>
+      <text x="250" y="422" fill="#4A7FD4" font-size="12" font-family="Inter,system-ui">merge → b-roll</text>
+
+      <!-- b-roll finally merges to MAIN -->
+      <path d="M190,490 H70" fill="none" stroke="#5BA85A" stroke-width="2.75"/>
+      <circle cx="190" cy="490" r="11" fill="#5BA85A"/>
+      <circle cx="70" cy="490" r="11" fill="#5BA85A"/>
+      <text x="95" y="482" fill="#5BA85A" font-size="12" font-family="Inter,system-ui">merge → main</text>
+
+      <!-- strike-through note: no line from main to blue -->
+      <text x="280" y="525" fill="#999" font-size="11" font-family="ui-monospace,Menlo,monospace">✗ no hop main → reel-covers</text>
+    </svg>
+    <p class="note"><b style="color:#EDEAE3">Only one fork from main:</b> b-roll unit. reel-covers is nested under that worktree. A/B under each worktree. Integrates inward: A/B → worktree → parent worktree → main.</p>
+  </div>
+</div>
+</body>
+</html>

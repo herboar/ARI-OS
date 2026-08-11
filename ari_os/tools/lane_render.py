@@ -2,9 +2,9 @@
 
 Two switchable views over the same snapshot:
 
-* **Rail** — three bake-off styles (toggle `rail`): **nested** (depth columns),
-  **elbow** (single main spine + parent badge), **graph** (mini DAG above list).
-  Dead routes are dashed and never loop back to main.
+* **Rail** — **elbow** = Excalidraw timeline (MAIN continuous, worktrees/A/B
+  vertical columns, merge to whatever integration.target says, dead stops).
+  nested/graph remain as alternate toggles.
 * **Dense** — tree-indented rows with parent chips; divergence as a bar.
 
 Views and rail styles are emitted/selectable via `data-view` / `data-rail` —
@@ -311,10 +311,18 @@ def _assign_graph_columns(lanes: list) -> dict:
         while stack:
             pid, pcol = stack.pop(0)
             for ch in sort_kids(children.get(pid, [])):
+                # A/B variants vs nested worktrees (feature under another lane)
+                if ch.get("role") == "variant" or (
+                        ch.get("route_status") == "dead_route"
+                        and ch.get("role") != "feature"):
+                    fam = "ab"
+                else:
+                    fam = "worktree"
+                parent_c = layout[pid]["col"] if pid in layout else pcol
                 layout[ch["id"]] = {
                     "col": col,
-                    "parent_col": pcol if pid == wt["id"] else layout[pid]["col"],
-                    "family": "ab",
+                    "parent_col": parent_c,
+                    "family": fam,
                 }
                 my = col
                 col += 1
@@ -521,6 +529,319 @@ def _rail_graph_dot(lane: dict, scale: int) -> str:
             '</svg></div>'
             % (m["depth"], _e(m["role"]), _e(m["route"]), opacity, m["title"],
                m["radius"], m["color"], ring, mark))
+
+
+
+def _lane_palette(i: int) -> str:
+    """Stable colors for worktree columns (main is always red-ish)."""
+    palette = [
+        "#5BA85A", "#4A7FD4", "#E0A94A", "#A78BDB", "#D7834A",
+        "#6E9BD6", "#8FB04A", "#C4872E",
+    ]
+    return palette[i % len(palette)]
+
+
+def _merge_target_id(lane: dict, by_id: dict, by_branch: dict) -> str | None:
+    """Where this lane merges *to* — data-driven, never hardcoded.
+
+    Prefer integration.target_lane_id, then target_branch → lane id,
+    then parent_id. Dead routes merge nowhere.
+    """
+    if (lane.get("route_status") or "") == "dead_route":
+        return None
+    integ = lane.get("integration") or {}
+    tid = integ.get("target_lane_id")
+    if tid and tid in by_id:
+        return tid
+    tb = integ.get("target_branch")
+    if tb and tb in by_branch:
+        return by_branch[tb]["id"]
+    if tb in ("main", "master"):
+        main = next((l for l in by_id.values() if l.get("kind") == "main"), None)
+        return main["id"] if main else None
+    # Fall back to parent (fork parent is often also merge parent for A/B)
+    pid = lane.get("parent_id")
+    if pid and pid in by_id:
+        return pid
+    return None
+
+
+def _timeline_graph(repo: dict) -> str:
+    """Continuous Excalidraw-style graph for one repo.
+
+    Time top→bottom. MAIN vertical with hatched 'behind' nodes.
+    Worktrees/A/B = vertical columns. Fork hop from parent column.
+    Merge hop to whatever integration.target says (or dead stops).
+    """
+    lanes = list(repo.get("lanes") or [])
+    if not lanes:
+        return ""
+    lanes.sort(key=lambda l: (
+        l.get("_tree_ord") if l.get("_tree_ord") is not None else 99,
+        l.get("name") or ""))
+    layout = _assign_graph_columns(lanes)
+    by_id = {l["id"]: l for l in lanes}
+    by_branch = {l.get("branch"): l for l in lanes if l.get("branch")}
+    n_cols = max((v["col"] for v in layout.values()), default=0) + 1
+
+    # Vertical slot per lane (row in the timeline)
+    row_h = 36
+    top = 48
+    # main gets several slots for behind markers
+    # each non-main lane = one primary row
+    non_main = [l for l in lanes if l.get("kind") != "main"]
+    # Build ordered events: main start, then each lane in tree order
+    # y positions
+    y_of = {}
+    y = top
+    main = next((l for l in lanes if l.get("kind") == "main"), None)
+    if main:
+        y_of[main["id"]] = y
+        y += row_h
+    # interleave: for each lane, place it, leave room for its history
+    for lane in non_main:
+        y_of[lane["id"]] = y
+        y += row_h + 8
+    # extra bottom for final merges into main
+    y_end = y + 48
+    bottom = y_end + 24
+
+    col_w = 56
+    x0 = 48
+
+    def X(c):
+        return x0 + c * col_w
+
+    width = max(420, x0 + n_cols * col_w + 160)
+    height = bottom + 20
+
+    # Color per worktree column root
+    wt_colors = {}
+    wi = 0
+    for lane in lanes:
+        info = layout.get(lane["id"], {})
+        if info.get("family") == "worktree" or (
+                lane.get("kind") != "main" and info.get("family") != "ab"):
+            if lane["id"] not in wt_colors:
+                wt_colors[lane["id"]] = _lane_palette(wi)
+                wi += 1
+    # A/B inherit nearest worktree ancestor color (dimmed for dead)
+
+    def color_for(lane):
+        if lane.get("kind") == "main":
+            return "#E0654A"
+        if (lane.get("route_status") or "") == "dead_route":
+            return "#9A9A9A"
+        info = layout.get(lane["id"], {})
+        if info.get("family") == "ab":
+            # walk parent for worktree color
+            pid = lane.get("parent_id")
+            while pid and pid in by_id:
+                if pid in wt_colors:
+                    return wt_colors[pid]
+                pid = by_id[pid].get("parent_id")
+            return "#A8B5C4"
+        return wt_colors.get(lane["id"], "#E0A94A")
+
+    parts = [
+        '<div class="lb-timeline">',
+        '<div class="lb-timeline-label">timeline · fork parent + merge target are data-driven</div>',
+        '<svg class="lb-timeline-svg" viewBox="0 0 %d %d" width="100%%" '
+        'role="img" aria-label="worktree timeline">' % (width, height),
+        '<rect width="%d" height="%d" fill="#121211"/>' % (width, height),
+    ]
+
+    # Column headers
+    for lane in lanes:
+        info = layout.get(lane["id"])
+        if not info:
+            continue
+        if lane.get("kind") == "main" or info.get("family") == "worktree":
+            c = info["col"]
+            name = lane.get("name") or "?"
+            if len(name) > 12:
+                name = name[:11] + "…"
+            parts.append(
+                '<text x="%d" y="22" fill="%s" font-size="10" '
+                'font-family="ui-monospace,Menlo,monospace" text-anchor="middle">%s</text>'
+                % (X(c), color_for(lane), _e(name))
+            )
+
+    # MAIN vertical spine full height
+    if main:
+        mx = X(0)
+        parts.append(
+            '<line x1="%d" y1="%d" x2="%d" y2="%d" stroke="#E0654A" stroke-width="3"/>'
+            % (mx, top - 8, mx, bottom)
+        )
+        parts.append(
+            '<circle cx="%d" cy="%d" r="8" fill="#E0654A"/>' % (mx, top)
+        )
+        parts.append(
+            '<text x="%d" y="%d" fill="#E0654A" font-size="11" '
+            'font-family="ui-monospace,Menlo,monospace">main</text>'
+            % (mx + 12, top + 4)
+        )
+        # Hatched "behind" markers: main commits while any open worktree
+        # Use behind count from worktrees as density of hatch marks
+        hatch_ys = []
+        if non_main:
+            y0 = top + 40
+            y1 = bottom - 60
+            # Density of hatch marks from max behind count (main moved while WTs open)
+            max_behind = 0
+            for l in non_main:
+                try:
+                    max_behind = max(max_behind, int((l.get("git") or {}).get("behind") or 0))
+                except (TypeError, ValueError):
+                    pass
+            n_hatch = 3 if max_behind <= 0 else min(5, max(2, max_behind // 20 + 2))
+            for i in range(n_hatch):
+                hatch_ys.append(y0 + (y1 - y0) * (i + 1) / (n_hatch + 1))
+        for hy in hatch_ys:
+            parts.append(
+                '<circle cx="%d" cy="%d" r="9" fill="#121211" stroke="#E0654A" '
+                'stroke-width="2"/>' % (mx, hy)
+            )
+            # diagonal hatch via small lines
+            parts.append(
+                '<path d="M%d,%d L%d,%d M%d,%d L%d,%d M%d,%d L%d,%d" '
+                'stroke="#E0654A" stroke-width="1.4"/>'
+                % (mx - 5, hy - 4, mx + 5, hy + 4,
+                   mx - 5, hy, mx + 5, hy,
+                   mx - 5, hy + 4, mx + 5, hy - 4)
+            )
+        if hatch_ys:
+            parts.append(
+                '<text x="%d" y="%d" fill="#E0654A" font-size="9" '
+                'font-family="ui-monospace,Menlo,monospace">behind</text>'
+                % (mx + 12, hatch_ys[0] + 3)
+            )
+
+    # Draw each non-main lane: vertical column + fork from parent
+    for lane in non_main:
+        info = layout.get(lane["id"], {})
+        c = int(info.get("col") or 1)
+        pc = info.get("parent_col")
+        if pc is None:
+            pc = 0
+        pc = int(pc)
+        xc, xp = X(c), X(pc)
+        y = y_of[lane["id"]]
+        col = color_for(lane)
+        dead = (lane.get("route_status") or "") == "dead_route"
+        fam = info.get("family") or "worktree"
+
+        # Vertical extent: from fork y to merge y or bottom of column activity
+        y_fork = y
+        # children of this lane for vertical span
+        child_ys = [y_of[ch["id"]] for ch in non_main
+                    if ch.get("parent_id") == lane["id"] and ch["id"] in y_of]
+        y_bot = max([y] + child_ys) + 28 if child_ys else y + 28
+
+        merge_to = _merge_target_id(lane, by_id, by_branch)
+        y_merge = None
+        if merge_to and merge_to in y_of and not dead:
+            # merge lands at a y below this lane's activity
+            y_merge = max(y_bot, y_of[merge_to] + 20) if merge_to == (main or {}).get("id") else y_bot + 16
+            # if merging to parent that is above us, place merge below our last child
+            y_merge = y_bot + 12
+
+        # Fork hop parent → this column
+        parts.append(
+            '<path d="M%d,%d H%d" fill="none" stroke="%s" stroke-width="%s"%s/>'
+            % (xp, y_fork, xc, col,
+               "2.75" if fam == "worktree" else "2",
+               ' stroke-dasharray="4 3"' if dead else "")
+        )
+        # Vertical run
+        y_vert_end = (y_merge if y_merge and not dead else
+                      (y + 24 if dead else y_bot))
+        parts.append(
+            '<line x1="%d" y1="%d" x2="%d" y2="%d" stroke="%s" stroke-width="%s"%s/>'
+            % (xc, y_fork, xc, y_vert_end, col,
+               "3" if fam == "worktree" else "2.25",
+               ' stroke-dasharray="4 3"' if dead else "")
+        )
+        # Commit dots along vertical (2–3)
+        parts.append(
+            '<circle cx="%d" cy="%d" r="%d" fill="%s"/>'
+            % (xc, y_fork, 8 if fam == "worktree" else 5.5, col)
+        )
+        if not dead and y_vert_end - y_fork > 40:
+            parts.append(
+                '<circle cx="%d" cy="%d" r="5" fill="%s"/>'
+                % (xc, (y_fork + y_vert_end) / 2, col)
+            )
+
+        # Label
+        label = lane.get("name") or "?"
+        kind_lbl = "WORKTREE" if fam == "worktree" else ("DEAD" if dead else "A/B")
+        parts.append(
+            '<text x="%d" y="%d" fill="%s" font-size="11" '
+            'font-family="ui-monospace,Menlo,monospace">%s</text>'
+            % (xc + 12, y_fork + 4, col, _e(label))
+        )
+        parts.append(
+            '<text x="%d" y="%d" fill="%s" font-size="9" '
+            'font-family="ui-monospace,Menlo,monospace">%s</text>'
+            % (xc + 12, y_fork + 16,
+               "#9A9A9A" if dead else col, kind_lbl)
+        )
+
+        if dead:
+            parts.append(
+                '<circle cx="%d" cy="%d" r="8" fill="#121211" stroke="#9A9A9A" '
+                'stroke-width="1.75"/>' % (xc, y_vert_end)
+            )
+            parts.append(
+                '<path d="M%d,%d L%d,%d M%d,%d L%d,%d" stroke="#888" stroke-width="1.75"/>'
+                % (xc - 4, y_vert_end - 4, xc + 4, y_vert_end + 4,
+                   xc + 4, y_vert_end - 4, xc - 4, y_vert_end + 4)
+            )
+            parts.append(
+                '<text x="%d" y="%d" fill="#888" font-size="10" '
+                'font-family="ui-monospace,Menlo,monospace">dead</text>'
+                % (xc + 12, y_vert_end + 4)
+            )
+        elif merge_to and merge_to in layout:
+            # Merge (or intended merge) hop to whatever target data says
+            tc = int(layout[merge_to]["col"])
+            tx = X(tc)
+            ym = y_vert_end
+            integ = lane.get("integration") or {}
+            git = lane.get("git") or {}
+            done = bool(
+                integ.get("merged_into_parent")
+                or git.get("merged_into_base")
+                or (lane.get("route_status") or "") in ("merged", "winner")
+            )
+            stroke = "#5BA85A"
+            dash = "" if done else ' stroke-dasharray="5 4"'
+            label = "merge →" if done else "will merge →"
+            parts.append(
+                '<path d="M%d,%d H%d" fill="none" stroke="%s" stroke-width="2.25"%s/>'
+                % (xc, ym, tx, stroke, dash)
+            )
+            parts.append(
+                '<circle cx="%d" cy="%d" r="7" fill="%s" %s/>'
+                % (tx, ym, stroke if done else "#121211",
+                   '' if done else 'stroke="#5BA85A" stroke-width="1.75"')
+            )
+            parts.append(
+                '<circle cx="%d" cy="%d" r="6" fill="%s"/>' % (xc, ym, col)
+            )
+            tname = by_id.get(merge_to, {}).get("name") or merge_to
+            if len(str(tname)) > 14:
+                tname = str(tname)[:13] + "…"
+            parts.append(
+                '<text x="%d" y="%d" fill="#5BA85A" font-size="10" '
+                'font-family="ui-monospace,Menlo,monospace">%s %s</text>'
+                % (min(xc, tx) + 10, ym - 8, label, _e(tname))
+            )
+
+    parts.append("</svg></div>")
+    return "".join(parts)
 
 
 def _repo_mini_graph(repo: dict, scale: int) -> str:
@@ -790,8 +1111,13 @@ def _row(lane: dict, repo: dict, mode: str, scale: int, rail_style: str = "elbow
     if mode == "rail":
         namecell = ('<div class="lb-name" style="padding-left:%dpx"><div class="n">%s%s</div>%s%s</div>'
                     % (pad, _e(name), kind_tag, sub, _actors(lane)))
-        cells = [_rail_svg(lane, scale, rail_style, layout), namecell, _figs(git), _pill(lane),
-                 '<span class="lb-chev">&#8250;</span>']
+        if rail_style == "elbow":
+            # Timeline graph above carries topology; rows stay a clean list
+            cells = [namecell, _figs(git), _pill(lane),
+                     '<span class="lb-chev">&#8250;</span>']
+        else:
+            cells = [_rail_svg(lane, scale, rail_style, layout), namecell, _figs(git),
+                     _pill(lane), '<span class="lb-chev">&#8250;</span>']
     else:
         cells = [_pill(lane), namecell, _divergence(git, scale), _files(lane),
                  '<span class="lb-age">%s</span>' % _e(_age(age_s)),
@@ -819,7 +1145,12 @@ def _repo_section(repo: dict, mode: str, scale: int, rail_style: str = "elbow") 
     sub = ('<div class="lb-repo-sub">%s &middot; head %s %s &middot; %s ago</div>'
            % (_e(repo.get("path")), _e(head.get("sha")), _e(head.get("subject")),
               _e(_age(head.get("age_s")))))
-    graph = _repo_mini_graph(repo, scale) if (mode == "rail" and rail_style == "graph") else ""
+    if mode == "rail" and rail_style == "elbow":
+        graph = _timeline_graph(repo)
+    elif mode == "rail" and rail_style == "graph":
+        graph = _repo_mini_graph(repo, scale)
+    else:
+        graph = ""
     lane_list = list(repo.get("lanes") or [])
     # Parent before children always (tree_ord from snapshot, fallback stable)
     lane_list.sort(key=lambda l: (

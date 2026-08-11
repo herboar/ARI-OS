@@ -4,7 +4,9 @@
     {
       "agent": "interactive",
       "branch": "main",
-      "paths": ["*"],
+      "paths": [
+        "*"
+      ],
       "note": "Demo main tree",
       "role": "main",
       "started": "2026-08-11"
@@ -14,8 +16,10 @@
       "branch": "agent/broll-unit",
       "parent": "main",
       "role": "feature",
-      "paths": ["broll-*"],
-      "note": "FEATURE · open b-roll unit — linear home for related work",
+      "paths": [
+        "broll-*"
+      ],
+      "note": "FEATURE \u00b7 open b-roll unit \u2014 linear home for related work",
       "started": "2026-08-11"
     },
     {
@@ -23,8 +27,10 @@
       "branch": "agent/broll-dp2",
       "parent": "agent/broll-unit",
       "role": "variant",
-      "paths": ["dp2-*"],
-      "note": "VARIANT of broll · GIF backgrounds — merge to broll, not main",
+      "paths": [
+        "dp2-*"
+      ],
+      "note": "VARIANT of broll \u00b7 GIF backgrounds \u2014 merge to broll, not main",
       "started": "2026-08-11"
     },
     {
@@ -32,17 +38,21 @@
       "branch": "agent/broll-editor",
       "parent": "agent/broll-unit",
       "role": "variant",
-      "paths": ["editor-*"],
-      "note": "VARIANT of broll · slide editor UX — merge to broll, not main",
+      "paths": [
+        "editor-*"
+      ],
+      "note": "VARIANT of broll \u00b7 slide editor UX \u2014 merge to broll, not main",
       "started": "2026-08-11"
     },
     {
       "agent": "reel-covers",
       "branch": "agent/reel-covers",
-      "parent": "main",
+      "parent": "agent/broll-unit",
       "role": "feature",
-      "paths": ["covers.md"],
-      "note": "FEATURE · reel covers product surface",
+      "paths": [
+        "covers.md"
+      ],
+      "note": "WORKTREE under b-roll unit (not off main) \u2014 Ari linear continuation",
       "started": "2026-08-11"
     },
     {
@@ -50,8 +60,10 @@
       "branch": "agent/covers-dark",
       "parent": "agent/reel-covers",
       "role": "variant",
-      "paths": ["covers-dark*"],
-      "note": "A/B of reel-covers · dark plates — merge to reel-covers",
+      "paths": [
+        "covers-dark*"
+      ],
+      "note": "A/B of reel-covers \u00b7 dark plates \u2014 merge to reel-covers",
       "started": "2026-08-11"
     },
     {
@@ -60,8 +72,10 @@
       "parent": "agent/reel-covers",
       "role": "variant",
       "route_status": "dead_route",
-      "paths": ["covers-big*"],
-      "note": "DEAD route · bigger type discarded — will not merge",
+      "paths": [
+        "covers-big*"
+      ],
+      "note": "DEAD route \u00b7 bigger type discarded \u2014 will not merge",
       "started": "2026-08-11"
     },
     {
@@ -69,8 +83,10 @@
       "branch": "agent/script-parked",
       "parent": "main",
       "role": "feature",
-      "paths": ["script*"],
-      "note": "PARKED 2026-08-04 · independent of broll line",
+      "paths": [
+        "script*"
+      ],
+      "note": "PARKED 2026-08-04 \u00b7 independent of broll line",
       "started": "2026-08-11"
     }
   ]
