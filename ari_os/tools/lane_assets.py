@@ -190,12 +190,12 @@ summary.lb-repo-head:hover .lb-repo-name{color:var(--text);}
 .lb-hier[data-h="dead"]{color:var(--text3);border-style:dashed;text-decoration:line-through;}
 
 
-/* Excalidraw timeline graph (elbow rail) */
-.lb-timeline{margin:8px 4px 14px;padding:10px 12px 12px;border:1px solid var(--line);
-  border-radius:12px;background:var(--surface2);}
-.lb-timeline-label{font-family:var(--mono);font-size:10px;letter-spacing:.08em;
-  text-transform:uppercase;color:var(--text3);margin:0 0 8px;}
-.lb-timeline-svg{display:block;width:100%;height:auto;border-radius:8px;}
+.lb-timeline{margin:10px 2px 16px;padding:12px 12px 14px;border:1px solid rgba(224,169,74,.35);
+  border-radius:12px;background:linear-gradient(180deg,#1A1814 0%,#161615 100%);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.03);}
+.lb-timeline-label{font-family:var(--mono);font-size:10px;letter-spacing:.1em;
+  text-transform:uppercase;color:var(--amber);margin:0 0 10px;}
+.lb-timeline-svg{display:block;width:100%;height:auto;border-radius:8px;background:#0E0E0D;}
 .lb[data-view="rail"][data-rail="elbow"] .lb-view[data-v="rail"][data-rail-style="elbow"] .lb-row>summary{
   grid-template-columns:minmax(180px,1.2fr) 100px auto 14px;}
 /* ---------- expansion ---------- */
@@ -307,7 +307,7 @@ summary.lb-repo-head:hover .lb-repo-name{color:var(--text);}
 # --------------------------------------------------------------------------
 BOARD_JS = """
 (function(){
-  var K={view:'lbView',rail:'lbRail',density:'lbDensity',sort:'lbSort',clean:'lbClean',theme:'lbTheme'};
+  var K={view:'lbView2',rail:'lbRail2',density:'lbDensity',sort:'lbSort2',clean:'lbClean',theme:'lbTheme'};
   var D={view:'rail',rail:'elbow',density:'comfortable',sort:'tree',clean:'show',theme:'dark'};
   function get(k){try{var v=localStorage.getItem(K[k]);return v===null?D[k]:v}catch(e){return D[k]}}
   function set(k,v){try{localStorage.setItem(K[k],v)}catch(e){}}

@@ -585,8 +585,8 @@ def _timeline_graph(repo: dict) -> str:
     n_cols = max((v["col"] for v in layout.values()), default=0) + 1
 
     # Vertical slot per lane (row in the timeline)
-    row_h = 36
-    top = 48
+    row_h = 42
+    top = 52
     # main gets several slots for behind markers
     # each non-main lane = one primary row
     non_main = [l for l in lanes if l.get("kind") != "main"]
@@ -763,16 +763,26 @@ def _timeline_graph(repo: dict) -> str:
                "3" if fam == "worktree" else "2.25",
                ' stroke-dasharray="4 3"' if dead else "")
         )
-        # Commit dots along vertical (2–3)
+        # Commit dots along vertical — density from ahead count (polish)
+        r0 = 8 if fam == "worktree" else 5.5
         parts.append(
             '<circle cx="%d" cy="%d" r="%d" fill="%s"/>'
-            % (xc, y_fork, 8 if fam == "worktree" else 5.5, col)
+            % (xc, y_fork, r0, col)
         )
-        if not dead and y_vert_end - y_fork > 40:
-            parts.append(
-                '<circle cx="%d" cy="%d" r="5" fill="%s"/>'
-                % (xc, (y_fork + y_vert_end) / 2, col)
-            )
+        if not dead:
+            ahead = 0
+            try:
+                ahead = int((lane.get("git") or {}).get("ahead") or 0)
+            except (TypeError, ValueError):
+                ahead = 0
+            n_dots = max(1, min(6, ahead if ahead > 0 else 2))
+            span = max(8.0, float(y_vert_end - y_fork))
+            for i in range(1, n_dots):
+                yy = y_fork + span * i / n_dots
+                parts.append(
+                    '<circle cx="%d" cy="%.1f" r="%s" fill="%s"/>'
+                    % (xc, yy, 5 if fam == "worktree" else 4, col)
+                )
 
         # Label
         label = lane.get("name") or "?"
@@ -1145,12 +1155,14 @@ def _repo_section(repo: dict, mode: str, scale: int, rail_style: str = "elbow") 
     sub = ('<div class="lb-repo-sub">%s &middot; head %s %s &middot; %s ago</div>'
            % (_e(repo.get("path")), _e(head.get("sha")), _e(head.get("subject")),
               _e(_age(head.get("age_s")))))
-    if mode == "rail" and rail_style == "elbow":
-        graph = _timeline_graph(repo)
-    elif mode == "rail" and rail_style == "graph":
-        graph = _repo_mini_graph(repo, scale)
+    # Timeline is the primary Excalidraw graph — always show when there are worktrees
+    # so Dense/Nested/localStorage prefs cannot hide it.
+    has_wt = any(l.get("kind") != "main" for l in (repo.get("lanes") or []))
+    timeline = _timeline_graph(repo) if has_wt else ""
+    if mode == "rail" and rail_style == "graph":
+        graph = timeline + _repo_mini_graph(repo, scale)
     else:
-        graph = ""
+        graph = timeline
     lane_list = list(repo.get("lanes") or [])
     # Parent before children always (tree_ord from snapshot, fallback stable)
     lane_list.sort(key=lambda l: (
@@ -1242,7 +1254,7 @@ def _footer(snap: dict) -> str:
             % "".join(rows))
 
 
-def render_board(snapshot: dict, view: str = "dense", standalone: bool = True,
+def render_board(snapshot: dict, view: str = "rail", standalone: bool = True,
                  rail: str = "elbow") -> str:
     """Render the board. `standalone` wraps it in a full previewable document.
 
@@ -1298,6 +1310,6 @@ def render_board(snapshot: dict, view: str = "dense", standalone: bool = True,
             "<script>%s</script></body></html>" % (view, BOARD_CSS, board, BOARD_JS))
 
 
-def render_board_fragment(snapshot: dict, view: str = "dense") -> str:
+def render_board_fragment(snapshot: dict, view: str = "rail") -> str:
     """The board only — for embedding in the monitor page."""
-    return render_board(snapshot, view=view, standalone=False)
+    return render_board(snapshot, view=view, standalone=False, rail="elbow")
