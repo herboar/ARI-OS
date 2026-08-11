@@ -242,12 +242,12 @@ summary.lb-repo-head:hover .lb-repo-name{color:var(--text);}
 .lb-cmd-tip{font-family:var(--mono);font-size:10px;color:var(--text3);flex:none;}
 .lb-cmd{flex-wrap:wrap;}
 /* ---------- view switching + rail bake-off styles ---------- */
-.lb-view{display:none;}
-/* Rail: show only the sub-view matching data-rail */
-.lb[data-view="rail"][data-rail="nested"] .lb-view[data-v="rail"][data-rail-style="nested"]{display:block;}
-.lb[data-view="rail"][data-rail="elbow"] .lb-view[data-v="rail"][data-rail-style="elbow"]{display:block;}
-.lb[data-view="rail"][data-rail="graph"] .lb-view[data-v="rail"][data-rail-style="graph"]{display:block;}
-.lb[data-view="dense"] .lb-view[data-v="dense"]{display:block;}
+.lb-view{display:none !important;}
+/* Rail: show only the sub-view matching data-rail (also enforced in JS) */
+.lb[data-view="rail"][data-rail="nested"] .lb-view[data-v="rail"][data-rail-style="nested"],
+.lb[data-view="rail"][data-rail="elbow"] .lb-view[data-v="rail"][data-rail-style="elbow"],
+.lb[data-view="rail"][data-rail="graph"] .lb-view[data-v="rail"][data-rail-style="graph"],
+.lb[data-view="dense"] .lb-view[data-v="dense"]{display:block !important;}
 /* Rail control only useful when rail is active */
 .lb[data-view="dense"] .lb-grp:has([data-lb-set^="rail:"]){opacity:.35;pointer-events:none;}
 .lb-view[data-v="dense"] .lb-row>summary{
@@ -344,21 +344,30 @@ BOARD_JS = """
       btn.setAttribute('aria-pressed',String(board.getAttribute('data-'+p[0])===p[1]));
     });
   }
+  function applyRailViews(board){
+    var view=board.getAttribute('data-view')||'dense';
+    var rail=board.getAttribute('data-rail')||'nested';
+    each('.lb-view',board,function(v){
+      var vv=v.getAttribute('data-v');
+      var rs=v.getAttribute('data-rail-style');
+      var show=(view==='dense'&&vv==='dense')||(view==='rail'&&vv==='rail'&&rs===rail);
+      v.style.display=show?'block':'none';
+    });
+  }
   function apply(){
     each('.lb',document,function(b){
       if(!b.hasAttribute('data-pin')){
         b.setAttribute('data-view',get('view'));
         b.setAttribute('data-rail',get('rail'));
       } else {
-        /* pinned standalone previews keep their server-rendered rail */
-        if(!b.getAttribute('data-rail'))b.setAttribute('data-rail',get('rail'));
+        if(!b.getAttribute('data-rail'))b.setAttribute('data-rail',get('rail')||'nested');
+        if(!b.getAttribute('data-view'))b.setAttribute('data-view',get('view')||'rail');
       }
       b.setAttribute('data-density',get('density'));
       b.setAttribute('data-theme',get('theme'));
       b.setAttribute('data-clean',get('clean'));
       b.setAttribute('data-sort',get('sort'));
-      if(!b.hasAttribute('data-pin') || !b.getAttribute('data-rail'))
-        b.setAttribute('data-rail', b.getAttribute('data-rail')||get('rail'));
+      applyRailViews(b);
       sortRows(b,get('sort'));countHidden(b);syncControls(b);applyAcks(b);
       b.__t0=Date.now();b.__age0=parseFloat(b.getAttribute('data-age-s')||'0');
     });

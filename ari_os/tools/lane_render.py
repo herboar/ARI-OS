@@ -240,10 +240,12 @@ def _lane_metrics(lane: dict, scale: int):
 def _rail_nested(lane: dict, scale: int) -> str:
     """A · Nested Rail — depth columns; curve origin at parent column."""
     m = _lane_metrics(lane, scale)
-    spine_x = 20
-    origin_x = spine_x + max(0, m["depth"] - 1) * 16
-    node_x = spine_x + m["depth"] * 16 + 28
-    width = max(96, int(node_x + 36))
+    # Deep horizontal steps so depth-2 is obviously not a main-fork
+    spine_x = 18
+    step = 34
+    origin_x = spine_x + max(0, m["depth"] - 1) * step
+    node_x = spine_x + m["depth"] * step + 22
+    width = max(120, int(node_x + 48))
     if lane.get("kind") == "main":
         return ('<div class="lb-railcell" data-style="nested" data-depth="0">'
                 '<svg class="lb-rail" viewBox="0 0 %d 64" width="%d" height="64" role="img">'
@@ -285,9 +287,9 @@ def _rail_elbow(lane: dict, scale: int) -> str:
                 '%s<circle class="node" cx="%d" cy="32" r="5.5" fill="var(--text2)" stroke="var(--bg)"/>'
                 '<text x="%d" y="35" font-size="9" fill="var(--text3)">main</text></svg></div>'
                 % (width, width, m["title"], spine_x, spine_x + 14))
-    reach = 40 + min(m["behind"], m["scale"]) / float(m["scale"]) * 36
-    # Nested depth only nudges apex slightly so siblings stack readable
-    apex = reach + min(m["depth"], 3) * 6
+    # Pure fan-out from main spine — depth does NOT shift the curve
+    reach = 44 + min(m["behind"], m["scale"]) / float(m["scale"]) * 32
+    apex = reach
     radius = m["radius"]
     d = "M%d,6 C%d,20 %.1f,22 %.1f,32" % (spine_x, spine_x, apex - 12, apex)
     if not m["dead"] and m["role"] != "variant" and m["merged_base"]:
@@ -589,8 +591,10 @@ def _row(lane: dict, repo: dict, mode: str, scale: int, rail_style: str = "neste
                 % (max(0, depth) * 14, _e(name), kind_tag, sub))
 
     if mode == "rail":
-        namecell = ('<div class="lb-name"><div class="n">%s%s</div>%s%s</div>'
-                    % (_e(name), kind_tag, sub, _actors(lane)))
+        # Nested: indent the text so depth reads without relying only on SVG
+        pad = (depth * 18) if rail_style == "nested" else 0
+        namecell = ('<div class="lb-name" style="padding-left:%dpx"><div class="n">%s%s</div>%s%s</div>'
+                    % (pad, _e(name), kind_tag, sub, _actors(lane)))
         cells = [_rail_svg(lane, scale, rail_style), namecell, _figs(git), _pill(lane),
                  '<span class="lb-chev">&#8250;</span>']
     else:
@@ -620,7 +624,7 @@ def _repo_section(repo: dict, mode: str, scale: int, rail_style: str = "nested")
     sub = ('<div class="lb-repo-sub">%s &middot; head %s %s &middot; %s ago</div>'
            % (_e(repo.get("path")), _e(head.get("sha")), _e(head.get("subject")),
               _e(_age(head.get("age_s")))))
-    graph = _repo_mini_graph(repo, scale) if mode == "rail" else ""
+    graph = _repo_mini_graph(repo, scale) if (mode == "rail" and rail_style == "graph") else ""
     lanes = "".join(_row(l, repo, mode, scale, rail_style) for l in (repo.get("lanes") or []))
     if not lanes:
         lanes = '<div class="lb-hidden-note">no lanes discovered in this repo</div>'
