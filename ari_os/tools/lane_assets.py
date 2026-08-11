@@ -241,17 +241,35 @@ summary.lb-repo-head:hover .lb-repo-name{color:var(--text);}
 .lb-row[data-acked="1"]>summary{border-left-color:var(--line)!important;}
 .lb-cmd-tip{font-family:var(--mono);font-size:10px;color:var(--text3);flex:none;}
 .lb-cmd{flex-wrap:wrap;}
-/* ---------- view switching ---------- */
+/* ---------- view switching + rail bake-off styles ---------- */
 .lb-view{display:none;}
-.lb[data-view="rail"] .lb-view[data-v="rail"]{display:block;}
+/* Rail: show only the sub-view matching data-rail */
+.lb[data-view="rail"][data-rail="nested"] .lb-view[data-v="rail"][data-rail-style="nested"]{display:block;}
+.lb[data-view="rail"][data-rail="elbow"] .lb-view[data-v="rail"][data-rail-style="elbow"]{display:block;}
+.lb[data-view="rail"][data-rail="graph"] .lb-view[data-v="rail"][data-rail-style="graph"]{display:block;}
 .lb[data-view="dense"] .lb-view[data-v="dense"]{display:block;}
+/* Rail control only useful when rail is active */
+.lb[data-view="dense"] .lb-grp:has([data-lb-set^="rail:"]){opacity:.35;pointer-events:none;}
 .lb-view[data-v="dense"] .lb-row>summary{
   grid-template-columns:88px minmax(150px,1.15fr) 100px 78px 46px minmax(170px,1.25fr) 14px;}
 .lb-view[data-v="rail"] .lb-row>summary{
-  grid-template-columns:minmax(96px,160px) minmax(200px,1fr) auto auto auto 14px;padding:0 10px 0 0;gap:14px;
+  grid-template-columns:minmax(48px,160px) minmax(200px,1fr) auto auto auto 14px;padding:0 10px 0 0;gap:14px;
   min-height:64px;border-left:0;border-radius:9px;}
+.lb-view[data-v="rail"][data-rail-style="graph"] .lb-row>summary{
+  grid-template-columns:48px minmax(200px,1fr) auto auto auto 14px;}
 .lb-view[data-v="rail"] .lb-row>summary .lb-actors{margin-top:3px;}
 .lb-view[data-v="rail"] .lb-row{border-top:0;}
+/* Mini-graph only inside graph rail subview */
+.lb-minigraph-wrap{display:none;margin:10px 4px 12px;padding:12px 14px;border:1px solid var(--line);
+  border-radius:12px;background:var(--surface2);}
+.lb-view[data-rail-style="graph"] .lb-minigraph-wrap{display:block;}
+.lb-minigraph-label{font-family:var(--mono);font-size:10px;letter-spacing:.08em;text-transform:uppercase;
+  color:var(--text3);margin:0 0 8px;}
+.lb-minigraph{display:block;max-width:100%;height:auto;}
+/* Elbow spine is always at left:24 — keep continuous CSS spine */
+.lb-view[data-rail-style="elbow"] .lb-railcell::before{left:23px;}
+.lb-view[data-rail-style="nested"] .lb-railcell::before{left:19px;}
+.lb-view[data-rail-style="graph"] .lb-railcell::before{display:none;}
 @media (max-width:820px){
   .lb-view[data-v="dense"] .lb-row>summary{grid-template-columns:80px 1fr 14px;}
   .lb-view[data-v="dense"] .lb-drift,.lb-view[data-v="dense"] .lb-files,
@@ -266,8 +284,8 @@ summary.lb-repo-head:hover .lb-repo-name{color:var(--text);}
 # --------------------------------------------------------------------------
 BOARD_JS = """
 (function(){
-  var K={view:'lbView',density:'lbDensity',sort:'lbSort',clean:'lbClean',theme:'lbTheme'};
-  var D={view:'dense',density:'comfortable',sort:'tree',clean:'show',theme:'dark'};
+  var K={view:'lbView',rail:'lbRail',density:'lbDensity',sort:'lbSort',clean:'lbClean',theme:'lbTheme'};
+  var D={view:'dense',rail:'nested',density:'comfortable',sort:'tree',clean:'show',theme:'dark'};
   function get(k){try{var v=localStorage.getItem(K[k]);return v===null?D[k]:v}catch(e){return D[k]}}
   function set(k,v){try{localStorage.setItem(K[k],v)}catch(e){}}
   function each(sel,root,fn){
@@ -328,11 +346,19 @@ BOARD_JS = """
   }
   function apply(){
     each('.lb',document,function(b){
-      if(!b.hasAttribute('data-pin'))b.setAttribute('data-view',get('view'));
+      if(!b.hasAttribute('data-pin')){
+        b.setAttribute('data-view',get('view'));
+        b.setAttribute('data-rail',get('rail'));
+      } else {
+        /* pinned standalone previews keep their server-rendered rail */
+        if(!b.getAttribute('data-rail'))b.setAttribute('data-rail',get('rail'));
+      }
       b.setAttribute('data-density',get('density'));
       b.setAttribute('data-theme',get('theme'));
       b.setAttribute('data-clean',get('clean'));
       b.setAttribute('data-sort',get('sort'));
+      if(!b.hasAttribute('data-pin') || !b.getAttribute('data-rail'))
+        b.setAttribute('data-rail', b.getAttribute('data-rail')||get('rail'));
       sortRows(b,get('sort'));countHidden(b);syncControls(b);applyAcks(b);
       b.__t0=Date.now();b.__age0=parseFloat(b.getAttribute('data-age-s')||'0');
     });

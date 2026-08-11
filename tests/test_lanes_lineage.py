@@ -100,3 +100,16 @@ def test_variant_merge_targets_parent():
     html = _commands(variant, repo)
     assert "agent/reel-covers" in html
     assert "checkout agent/reel-covers" in html
+
+
+def test_rail_bakeoff_styles_all_emitted():
+    from ari_os.tools.lane_render import render_board
+    from ari_os.tools.lane_fixtures import load_fixture
+
+    html = render_board(load_fixture(), view="rail", standalone=True, rail="elbow")
+    assert 'data-rail="elbow"' in html
+    assert 'data-rail-style="nested"' in html
+    assert 'data-rail-style="elbow"' in html
+    assert 'data-rail-style="graph"' in html
+    assert "lb-minigraph" in html
+    assert 'data-lb-set="rail:graph"' in html

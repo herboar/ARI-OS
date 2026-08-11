@@ -1,0 +1,49 @@
+<!doctype html>
+<html><head><meta charset=utf-8>
+<meta name=viewport content="width=device-width,initial-scale=1">
+<title>Lane Board · Rail bake-off A/B/C</title>
+<style>
+  :root{--bg:#0E0E0D;--line:#2C2C29;--text:#EDEAE3;--text2:#A5A096;--amber:#E0A94A;}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--text);font:15px/1.5 Inter,system-ui,sans-serif}
+  header{padding:28px 24px 12px;max-width:1400px;margin:0 auto}
+  h1{font-size:22px;margin:0 0 8px;letter-spacing:-.02em}
+  p{color:var(--text2);max-width:70ch;margin:0 0 10px}
+  .k{font:11px/1.4 ui-monospace,Menlo,monospace;color:var(--amber);letter-spacing:.12em;text-transform:uppercase}
+  .grid{display:grid;grid-template-columns:1fr;gap:0;max-width:1400px;margin:0 auto 40px;padding:0 12px}
+  @media(min-width:1100px){.grid{grid-template-columns:1fr 1fr 1fr;gap:10px}}
+  .card{border:1px solid var(--line);border-radius:14px;overflow:hidden;background:#161615}
+  .card h2{margin:0;padding:12px 14px;font-size:13px;border-bottom:1px solid var(--line);
+    display:flex;justify-content:space-between;align-items:center}
+  .card h2 span{font:11px ui-monospace,Menlo,monospace;color:var(--text2)}
+  .card iframe{width:100%;height:78vh;border:0;background:var(--bg)}
+  .pick{padding:10px 14px;border-top:1px solid var(--line);font-size:12px;color:var(--text2)}
+</style></head><body>
+<header>
+  <div class=k>Visual bake-off · same fixture · pick one</div>
+  <h1>Rail styles: Nested · Elbow · Graph</h1>
+  <p>All three render the identical schema-2 fixture (feature + variants + dead route).
+  Flip Nested/Elbow/Graph on the live board too — the control is built in.
+  Keep one; the others become dead routes.</p>
+  <p><b>A Nested</b> — depth columns, curve from parent (Ari “split from here”).
+  <b>B Elbow</b> — single main spine, parent as badge.
+  <b>C Graph</b> — mini DAG above the list.</p>
+</header>
+<div class=grid>
+  <div class=card>
+    <h2>A · Nested <span>recommended for Ari model</span></h2>
+    <iframe src="lane-board-bakeoff-nested.html"></iframe>
+    <div class=pick>Best parent→child read. Can get wide at depth ≥ 3.</div>
+  </div>
+  <div class=card>
+    <h2>B · Elbow <span>minimal change from v1 rail</span></h2>
+    <iframe src="lane-board-bakeoff-elbow.html"></iframe>
+    <div class=pick>One spine; lineage is a badge. Compact, slightly decorative.</div>
+  </div>
+  <div class=card>
+    <h2>C · Graph <span>topology first</span></h2>
+    <iframe src="lane-board-bakeoff-graph.html"></iframe>
+    <div class=pick>Best for multi-variant clouds. List is secondary.</div>
+  </div>
+</div>
+</body></html>
