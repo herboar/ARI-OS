@@ -336,10 +336,12 @@ def _assign_graph_columns(lanes: list) -> dict:
 
 
 def _rail_elbow(lane: dict, scale: int, layout: dict | None = None) -> str:
-    """Classic column git graph: one column per worktree; A/B as subcolumns.
+    """Classic column git graph — matches THE-TARGET.html.
 
-    Horizontal lines only go parent_col ↔ this_col (never cross the board).
-    A/B runs vertically in its subcolumn, then MERGE back to parent or DEAD stop.
+    - MAIN = col 0, continuous vertical
+    - Each worktree = own column (short hop from MAIN, then vertical)
+    - Each A/B = subcolumn next to parent only (short hop in, vertical run,
+      then MERGE hop back to parent OR DEAD stop — never a board-wide trunk)
     """
     m = _lane_metrics(lane, scale)
     layout = layout or {}
@@ -349,16 +351,16 @@ def _rail_elbow(lane: dict, scale: int, layout: dict | None = None) -> str:
     n_cols = int(info.get("n_cols") or max(col + 1, 1))
     family = info.get("family") or ("main" if lane.get("kind") == "main" else "worktree")
 
-    col_w = 22
-    x0 = 12
-    def X(c):
+    col_w = 24
+    x0 = 14
+
+    def X(c: int) -> int:
         return x0 + int(c) * col_w
 
-    width = max(96, x0 + n_cols * col_w + 16)
-    h = 64
-    mid = 32
+    width = max(88, x0 + n_cols * col_w + 18)
+    h, mid = 64, 32
     color = m["color"]
-    dead = m["dead"]
+    dead = bool(m["dead"])
     if dead:
         color = "var(--text3)"
 
@@ -370,136 +372,128 @@ def _rail_elbow(lane: dict, scale: int, layout: dict | None = None) -> str:
         m["title"],
     ]
 
-    # Faint guides for every column
-    for c in range(n_cols):
-        parts.append(
-            '<line x1="%d" y1="0" x2="%d" y2="%d" stroke="var(--line)" '
-            'stroke-width="1" opacity=".35"/>' % (X(c), X(c), h)
-        )
-
-    # Solid verticals: MAIN always; parent worktree column; this column
-    solid = {0, col}
+    # Only draw verticals that matter for THIS row: MAIN, parent, self.
+    # (Drawing every column created noise; continuous trunk is forbidden.)
+    verts = {0, col}
     if parent_col is not None:
-        solid.add(int(parent_col))
-    for c in sorted(solid):
+        verts.add(int(parent_col))
+
+    for c in sorted(verts):
+        xc = X(c)
         if c == 0:
             stroke, sw = "var(--text2)", 2.75
         elif c == col:
-            stroke, sw = color, (2.5 if family == "worktree" else 2)
+            stroke, sw = color, (2.6 if family == "worktree" else 2.1)
         else:
-            stroke, sw = "var(--text3)", 2
+            # parent column — keep visible so merge home is readable
+            stroke, sw = "var(--text3)", 2.0
+
         if dead and c == col:
+            # dead A/B: vertical only to mid, then stop
             parts.append(
                 '<line x1="%d" y1="0" x2="%d" y2="%d" stroke="%s" stroke-width="%s" '
-                'stroke-dasharray="4 3"/>' % (X(c), X(c), mid, color, sw)
+                'stroke-dasharray="4 3"/>' % (xc, xc, mid, color, sw)
             )
         else:
             parts.append(
                 '<line x1="%d" y1="0" x2="%d" y2="%d" stroke="%s" stroke-width="%s"/>'
-                % (X(c), X(c), h, stroke, sw)
+                % (xc, xc, h, stroke, sw)
             )
 
-    # MAIN node
+    # MAIN row
     if family == "main" or lane.get("kind") == "main":
         parts.append(
-            '<circle class="node" cx="%d" cy="%d" r="6" fill="var(--text2)" '
-            'stroke="var(--bg)" stroke-width="1.5"/>' % (X(0), mid)
+            '<circle cx="%d" cy="%d" r="6" fill="var(--text2)" stroke="var(--bg)" '
+            'stroke-width="1.5"/>' % (X(0), mid)
         )
         parts.append(
-            '<text x="%d" y="%d" font-size="8" fill="var(--text3)" text-anchor="middle">'
-            'MAIN</text>' % (X(0), mid + 16)
+            '<text x="%d" y="%d" font-size="8" fill="var(--text3)" '
+            'text-anchor="middle">MAIN</text>' % (X(0), mid + 16)
         )
         parts.append("</svg></div>")
         return "".join(parts)
 
-    # Horizontal fork from parent column → this column (only one hop)
-    if parent_col is not None:
-        px, cx = X(int(parent_col)), X(col)
-        y = mid if family == "worktree" else (mid - 10 if not dead else mid - 6)
-        # worktree: fork at mid; A/B: slightly higher so merge can sit at mid
-        if family == "ab":
-            y_fork = 18
+    px = X(int(parent_col)) if parent_col is not None else X(0)
+    cx = X(col)
+
+    if family == "worktree":
+        # Short hop MAIN → this worktree column only (not across the board)
+        parts.append(
+            '<path d="M%d,%d H%d" fill="none" stroke="%s" stroke-width="2.25"/>'
+            % (px, mid, cx, color)
+        )
+        parts.append(
+            '<circle cx="%d" cy="%d" r="6" fill="%s" stroke="var(--bg)" '
+            'stroke-width="1.5"/>' % (cx, mid, color)
+        )
+        if _uncommitted(m["git"]):
             parts.append(
-                '<path d="M%d,%d H%d" fill="none" stroke="%s" stroke-width="1.75"%s/>'
-                % (px, y_fork, cx, color,
-                   ' stroke-dasharray="4 3"' if dead else "")
+                '<circle cx="%d" cy="%d" r="9" fill="none" stroke="var(--red)" '
+                'stroke-width="1.2"/>' % (cx, mid)
             )
-            # vertical run in subcolumn from fork to mid (or to dead)
-            y_end = mid if not (
-                dead
-            ) else mid
+        parts.append(
+            '<text x="%d" y="%d" font-size="8" fill="var(--text3)" '
+            'text-anchor="middle">WT</text>' % (cx, mid + 16)
+        )
+    else:
+        # A/B: hop into subcolumn high, run vertical, then merge or dead
+        y_fork = 14
+        parts.append(
+            '<path d="M%d,%d H%d" fill="none" stroke="%s" stroke-width="1.75"%s/>'
+            % (px, y_fork, cx, color, ' stroke-dasharray="4 3"' if dead else "")
+        )
+        # vertical run in A/B column (THE thing Mati circled)
+        y_bot = mid if dead else h
+        parts.append(
+            '<line x1="%d" y1="%d" x2="%d" y2="%d" stroke="%s" stroke-width="2"%s/>'
+            % (cx, y_fork, cx, y_bot, color, ' stroke-dasharray="4 3"' if dead else "")
+        )
+        parts.append(
+            '<circle cx="%d" cy="%d" r="4" fill="%s" stroke="var(--bg)" '
+            'stroke-width="1.2"/>' % (cx, y_fork + 6, color)
+        )
+
+        if dead:
             parts.append(
-                '<line x1="%d" y1="%d" x2="%d" y2="%d" stroke="%s" stroke-width="1.85"%s/>'
-                % (cx, y_fork, cx, y_end, color,
-                   ' stroke-dasharray="4 3"' if dead else "")
+                '<circle cx="%d" cy="%d" r="6.5" fill="none" stroke="var(--red)" '
+                'stroke-width="1.5"/>' % (cx, mid)
             )
-            if dead:
-                # DEAD stop — X, no line below mid
+            parts.append(
+                '<path d="M%d,%d L%d,%d M%d,%d L%d,%d" stroke="var(--red)" '
+                'stroke-width="1.5"/>'
+                % (cx - 4, mid - 4, cx + 4, mid + 4, cx + 4, mid - 4, cx - 4, mid + 4)
+            )
+            parts.append(
+                '<text x="%d" y="%d" font-size="8" fill="var(--red)" '
+                'text-anchor="middle">DEAD</text>' % (cx, mid + 16)
+            )
+        else:
+            merged = bool(m.get("merged_parent")) or (
+                (lane.get("route_status") or "") in ("merged", "winner")
+            )
+            parts.append(
+                '<circle cx="%d" cy="%d" r="4.5" fill="%s" stroke="var(--bg)" '
+                'stroke-width="1.2"/>' % (cx, mid, color)
+            )
+            if merged:
+                # hop back to parent worktree column ONLY
                 parts.append(
-                    '<circle cx="%d" cy="%d" r="6" fill="none" stroke="var(--red)" '
-                    'stroke-width="1.5"/>' % (cx, mid)
+                    '<path d="M%d,%d H%d" fill="none" stroke="var(--olive)" '
+                    'stroke-width="2"/>' % (cx, mid, px)
                 )
                 parts.append(
-                    '<path d="M%d,%d L%d,%d M%d,%d L%d,%d" stroke="var(--red)" '
-                    'stroke-width="1.5"/>'
-                    % (cx - 4, mid - 4, cx + 4, mid + 4, cx + 4, mid - 4, cx - 4, mid + 4)
+                    '<circle cx="%d" cy="%d" r="5.5" fill="var(--olive)" '
+                    'stroke="var(--bg)" stroke-width="1.5"/>' % (px, mid)
                 )
                 parts.append(
-                    '<text x="%d" y="%d" font-size="8" fill="var(--red)" '
-                    'text-anchor="middle">DEAD</text>' % (cx, mid + 16)
+                    '<text x="%d" y="%d" font-size="8" fill="var(--olive)" '
+                    'text-anchor="middle">MERGE</text>' % (px, mid + 16)
                 )
             else:
-                merged = bool(m.get("merged_parent")) or (
-                    (lane.get("route_status") or "") in ("merged", "winner")
-                )
                 parts.append(
-                    '<circle cx="%d" cy="%d" r="4.5" fill="%s" '
-                    'stroke="var(--bg)" stroke-width="1.5"/>' % (cx, mid, color)
+                    '<text x="%d" y="%d" font-size="8" fill="%s" '
+                    'text-anchor="middle">A/B</text>' % (cx, mid + 16, color)
                 )
-                if merged:
-                    # Winner: rejoin parent worktree column
-                    parts.append(
-                        '<path d="M%d,%d H%d" fill="none" stroke="var(--olive)" '
-                        'stroke-width="1.85"/>' % (cx, mid, px)
-                    )
-                    parts.append(
-                        '<circle cx="%d" cy="%d" r="5.5" fill="var(--olive)" '
-                        'stroke="var(--bg)" stroke-width="1.5"/>' % (px, mid)
-                    )
-                    parts.append(
-                        '<text x="%d" y="%d" font-size="8" fill="var(--olive)" '
-                        'text-anchor="middle">MERGE</text>' % (px, mid + 16)
-                    )
-                else:
-                    # Still open: A/B column keeps running vertically
-                    parts.append(
-                        '<text x="%d" y="%d" font-size="8" fill="%s" '
-                        'text-anchor="middle">A/B</text>' % (cx, mid + 16, color)
-                    )
-        else:
-            # worktree fork from main
-            parts.append(
-                '<path d="M%d,%d H%d" fill="none" stroke="%s" stroke-width="2"/>'
-                % (px, mid, cx, color)
-            )
-            parts.append(
-                '<circle class="node" cx="%d" cy="%d" r="6" fill="%s" '
-                'stroke="var(--bg)" stroke-width="1.5"/>' % (cx, mid, color)
-            )
-            if _uncommitted(m["git"]):
-                parts.append(
-                    '<circle cx="%d" cy="%d" r="9" fill="none" stroke="var(--red)" '
-                    'stroke-width="1.25"/>' % (cx, mid)
-                )
-            parts.append(
-                '<text x="%d" y="%d" font-size="8" fill="var(--text3)" '
-                'text-anchor="middle">WT</text>' % (cx, mid + 16)
-            )
-    else:
-        parts.append(
-            '<circle class="node" cx="%d" cy="%d" r="6" fill="%s" '
-            'stroke="var(--bg)" stroke-width="1.5"/>' % (X(col), mid, color)
-        )
 
     parts.append("</svg></div>")
     return "".join(parts)
